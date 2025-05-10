@@ -4,21 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SniperBet - Últimos Jogos dos Campeonatos</title>
-  <style>
-    body {
-      background-color: #0d0d0d;
-      color: #00ff00;
-      font-family: 'Courier New', Courier, monospace;
-      text-align: center;
-      padding: 20px;
-    }
-    .box {
-      border: 2px solid #00ff00;
-      display: inline-block;
-      padding: 20px;
-      margin-top: 20px;
-      text-align: left;
-    }
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -32,12 +17,16 @@
         const jogos = data.response;
         let html = "";
         jogos.forEach(jogo => {
-          const data = jogo.fixture.date.split("T")[0];
+          const dataHora = new Date(jogo.fixture.date);
+          const dataFormatada = dataHora.toLocaleDateString('pt-BR');
+          const horaFormatada = dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
           const home = jogo.teams.home.name;
           const away = jogo.teams.away.name;
-          const golsHome = jogo.goals.home;
-          const golsAway = jogo.goals.away;
-          html += `<p>${data}: ${home} ${golsHome} x ${golsAway} ${away}</p>`;
+          const golsHome = jogo.goals.home ?? "-";
+          const golsAway = jogo.goals.away ?? "-";
+
+          html += `<p>${dataFormatada} ${horaFormatada}: ${home} ${golsHome} x ${golsAway} ${away}</p>`;
         });
         document.getElementById("jogos").innerHTML = html;
       })
