@@ -1,45 +1,34 @@
-
-import express from 'express';
-import cors from 'cors';
-import fetch from 'node-fetch';
-import dotenv from 'dotenv';
-dotenv.config();
-
+// server.js
+const express = require('express');
+const fetch = require('node-fetch');
+require('dotenv').config();
 const app = express();
-app.use(cors());
-const PORT = process.env.PORT || 3000;
-const API_KEY = process.env.API_FOOTBALL_KEY;
+const port = process.env.PORT || 10000;
 
-const BASE_URL = 'https://api-football-v1.p.rapidapi.com/v3';
+const headers = {
+  'X-RapidAPI-Key': process.env.API_KEY_FOOTBALL,
+  'X-RapidAPI-Host': 'api-football-v1.p.rapidapi.com',
+};
+
+const ligas = [39, 140, 135]; // Premier League, La Liga, Serie A
 
 app.get('/ultimos-jogos', async (req, res) => {
   try {
-    const response = await fetch(`${BASE_URL}/fixtures?date=${new Date().toISOString().split('T')[0]}`, {
-      method: 'GET',
-      headers: {
-        'X-RapidAPI-Key': API_KEY,
-        'X-RapidAPI-Host': 'api-football-v1.p.rapidapi.com'
-      }
-    });
+    const resultados = [];
 
-    const data = await response.json();
+    for (const liga of ligas) {
+      const response = await fetch(`https://api-football-v1.p.rapidapi.com/v3/fixtures?league=${liga}&season=2024&last=3`, { headers });
+      const data = await response.json();
+      resultados.push(...data.response);
+    }
 
-    const jogos = data.response.map(jogo => ({
-      jogo_id: jogo.fixture.id,
-      data: jogo.fixture.date.split('T')[0],
-      hora: jogo.fixture.date.split('T')[1].substring(0,5),
-      liga: jogo.league.name,
-      time_casa: jogo.teams.home.name,
-      time_fora: jogo.teams.away.name,
-      status: jogo.fixture.status.short
-    }));
-
-    res.json(jogos);
+    res.json({ response: resultados });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ erro: 'Erro ao buscar jogos' });
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
+app.listen(port, () => {
+  console.log(`Servidor rodando na porta ${port}`);
 });
