@@ -1,64 +1,73 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>SniperBet - Últimos Jogos do Manchester United</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SniperBet - Últimos Jogos</title>
   <style>
     body {
-      background-color: #0d0d0d;
+      background-color: #0a0a0a;
       color: #00ff00;
-      font-family: monospace;
-      text-align: center;
-      padding-top: 50px;
+      font-family: 'Courier New', Courier, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
     }
+
     h1 {
-      font-size: 26px;
+      font-size: 28px;
+      margin-bottom: 30px;
     }
+
     .box {
-      margin: 20px auto;
-      padding: 20px;
       border: 2px solid #00ff00;
-      width: fit-content;
+      padding: 20px 30px;
+      border-radius: 10px;
+      background-color: #111;
+      text-align: left;
+      min-width: 320px;
     }
-    .erro {
-      color: red;
-      font-weight: bold;
+
+    p {
+      margin: 10px 0;
+    }
+
+    #jogos {
+      font-size: 16px;
     }
   </style>
 </head>
 <body>
   <h1>SniperBet - Últimos Jogos do Manchester United</h1>
-  <div class="box" id="jogos">
-    Carregando...
-  </div>
+  <div class="box" id="jogos">Carregando...</div>
 
   <script>
     const url = "https://sniperbet4.onrender.com/ultimos-jogos";
 
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        const jogos = data.response;
+        let html = "";
 
-    fetch("https://sniperbet4.onrender.com/ultimos-jogos")
-  .then(response => response.json())
-  .then(data => {
-    const jogos = data.response;
-    let html = "";
+        jogos.forEach(jogo => {
+          const date = jogo.fixture.date.split("T")[0];
+          const home = jogo.teams.home.name;
+          const away = jogo.teams.away.name;
+          const golsHome = jogo.goals.home;
+          const golsAway = jogo.goals.away;
 
-    jogos.forEach(jogo => {
-      const date = jogo.fixture.date.split("T")[0];
-      const home = jogo.teams.home.name;
-      const away = jogo.teams.away.name;
-      const golsHome = jogo.goals.home;
-      const golsAway = jogo.goals.away;
+          html += `<p>${date}: ${home} ${golsHome} x ${golsAway} ${away}</p>`;
+        });
 
-      html += `<p>${date}: ${home} ${golsHome} x ${golsAway} ${away}</p>`;
-    });
-
-    document.getElementById("jogos").innerHTML = html;
-  });
-    .catch(err => {
-      console.error(err);
-      document.getElementById("jogos").innerHTML = "<span class='erro'>Erro ao carregar dados!</span>";
-    });
+        document.getElementById("jogos").innerHTML = html;
+      })
+      .catch(err => {
+        console.error("Erro ao buscar dados:", err);
+        document.getElementById("jogos").innerHTML = "Erro ao carregar dados!";
+      });
   </script>
 </body>
 </html>
