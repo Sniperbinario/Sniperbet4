@@ -4,11 +4,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SniperBet - Últimos Jogos dos Campeonatos</title>
+  <title>SniperBet - Estatísticas</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>SniperBet - Últimos Jogos dos Campeonatos</h1>
+  <h1>SniperBet - Estatísticas dos Jogos</h1>
   <div class="box" id="jogos">Carregando...</div>
 
   <script>
@@ -32,22 +32,14 @@
             <button class="ver-estatisticas">Ver estatísticas</button>
             <div class="estatisticas" style="display:none">
               <h4>${jogo.timeCasa}</h4>
-              <p>Posição na tabela: ${jogo.posicaoCasa || 'N/D'}</p>
-              <p>Gols Feitos: ${jogo.estatisticasHome.mediaGolsFeitos}</p>
-              <p>Gols Sofridos: ${jogo.estatisticasHome.mediaGolsSofridos}</p>
-              <p>Escanteios: ${jogo.estatisticasHome.mediaEscanteios}</p>
-              <p>Cartões: ${jogo.estatisticasHome.mediaCartoes}</p>
-              <p>Últimos jogos:</p>
-              <ul>${jogo.ultimosJogosCasa.map(j => `<li>${j}</li>`).join("")}</ul>
+              <p>Média de Gols Feitos: ${jogo.estatisticasHome.mediaGolsFeitos}</p>
+              <p>Média de Gols Sofridos: ${jogo.estatisticasHome.mediaGolsSofridos}</p>
+              <p>Média de Escanteios: ${jogo.estatisticasHome.mediaEscanteios}</p>
               <hr>
               <h4>${jogo.timeFora}</h4>
-              <p>Posição na tabela: ${jogo.posicaoFora || 'N/D'}</p>
-              <p>Gols Feitos: ${jogo.estatisticasAway.mediaGolsFeitos}</p>
-              <p>Gols Sofridos: ${jogo.estatisticasAway.mediaGolsSofridos}</p>
-              <p>Escanteios: ${jogo.estatisticasAway.mediaEscanteios}</p>
-              <p>Cartões: ${jogo.estatisticasAway.mediaCartoes}</p>
-              <p>Últimos jogos:</p>
-              <ul>${jogo.ultimosJogosFora.map(j => `<li>${j}</li>`).join("")}</ul>
+              <p>Média de Gols Feitos: ${jogo.estatisticasAway.mediaGolsFeitos}</p>
+              <p>Média de Gols Sofridos: ${jogo.estatisticasAway.mediaGolsSofridos}</p>
+              <p>Média de Escanteios: ${jogo.estatisticasAway.mediaEscanteios}</p>
             </div>
           `;
 
