@@ -1,56 +1,60 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SniperBet - Últimos Jogos dos Campeonatos</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <h1>SniperBet - Últimos Jogos dos Campeonatos</h1>
   <div class="box" id="jogos">Carregando...</div>
 
-  <script>fetch("https://sniperbet4.onrender.com/ultimos-jogos")
-  .then(res => res.json())
-  .then(data => {
-    const jogos = data.response;
-    let html = "";
-    jogos.forEach((jogo, index) => {
-      const data = new Date(jogo.fixture.date);
-      const dia = data.toLocaleDateString("pt-BR");
-      const hora = data.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' });
-      const home = jogo.teams.home.name;
-      const away = jogo.teams.away.name;
-      const homeLogo = jogo.teams.home.logo;
-      const awayLogo = jogo.teams.away.logo;
-      const statsHome = jogo.teams.home.stats;
-      const statsAway = jogo.teams.away.stats;
+  <script>
+    fetch("https://sniperbet4.onrender.com/ultimos-jogos")
+      .then(res => res.json())
+      .then(data => {
+        const container = document.getElementById("jogos");
+        container.innerHTML = "";
 
-      html += `
-        <div class="jogo" onclick="mostrarEstatisticas(${index})">
-          ${dia} ${hora}: <img src="${homeLogo}" width="20"/> ${home} - x - ${away} <img src="${awayLogo}" width="20"/>
-          <div id="stats-${index}" class="estatisticas" style="display:none;">
-            <p><strong>${home} (últimos 5 jogos):</strong><br/>
-              Gols marcados: ${statsHome.golsFeitos} | Gols sofridos: ${statsHome.golsSofridos}<br/>
-              Cartões: ${statsHome.cartoes} | Escanteios: ${statsHome.escanteios}</p>
-            <p><strong>${away} (últimos 5 jogos):</strong><br/>
-              Gols marcados: ${statsAway.golsFeitos} | Gols sofridos: ${statsAway.golsSofridos}<br/>
-              Cartões: ${statsAway.cartoes} | Escanteios: ${statsAway.escanteios}</p>
-          </div>
-        </div>
-      `;
-    });
-    document.getElementById("jogos").innerHTML = html;
-  })
-  .catch(() => {
-    document.getElementById("jogos").innerHTML = "<p>Erro ao carregar dados!</p>";
-  });
+        data.jogos.forEach(jogo => {
+          const bloco = document.createElement("div");
+          bloco.className = "jogo";
 
-function mostrarEstatisticas(index) {
-  const el = document.getElementById(`stats-${index}`);
-  el.style.display = el.style.display === "none" ? "block" : "none";
-}
+          bloco.innerHTML = `
+            <p><strong>${new Date(jogo.data).toLocaleDateString('pt-BR')} ${jogo.horario}</strong></p>
+            <div class="time">
+              <img src="${jogo.logoCasa}" alt="${jogo.timeCasa}" width="30"> ${jogo.timeCasa}
+              <span> x </span>
+              ${jogo.timeFora} <img src="${jogo.logoFora}" alt="${jogo.timeFora}" width="30">
+            </div>
+            <button class="ver-estatisticas">Ver estatísticas</button>
+            <div class="estatisticas" style="display:none">
+              <h4>${jogo.timeCasa}</h4>
+              <p>Gols Feitos: ${jogo.estatisticasHome.mediaGolsFeitos}</p>
+              <p>Gols Sofridos: ${jogo.estatisticasHome.mediaGolsSofridos}</p>
+              <p>Escanteios: ${jogo.estatisticasHome.mediaEscanteios}</p>
+              <p>Cartões: ${jogo.estatisticasHome.mediaCartoes}</p>
+              <hr>
+              <h4>${jogo.timeFora}</h4>
+              <p>Gols Feitos: ${jogo.estatisticasAway.mediaGolsFeitos}</p>
+              <p>Gols Sofridos: ${jogo.estatisticasAway.mediaGolsSofridos}</p>
+              <p>Escanteios: ${jogo.estatisticasAway.mediaEscanteios}</p>
+              <p>Cartões: ${jogo.estatisticasAway.mediaCartoes}</p>
+            </div>
+          `;
 
+          bloco.querySelector(".ver-estatisticas").addEventListener("click", () => {
+            const stats = bloco.querySelector(".estatisticas");
+            stats.style.display = stats.style.display === "none" ? "block" : "none";
+          });
+
+          container.appendChild(bloco);
+        });
+      })
+      .catch(() => {
+        document.getElementById("jogos").innerHTML = "<p>Erro ao carregar dados!</p>";
+      });
   </script>
 </body>
 </html>
