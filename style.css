@@ -1,23 +1,45 @@
+
 body {
-  background-color: #0d0d0d;
-  color: #00ff00;
-  font-family: 'Courier New', Courier, monospace;
+  font-family: Arial, sans-serif;
+  background-color: #1b1b1b;
+  color: #f5f5f5;
+  padding: 20px;
+}
+
+h1 {
   text-align: center;
-  padding: 20px;
 }
+
 .box {
-  border: 2px solid #00ff00;
-  display: inline-block;
-  padding: 20px;
-  margin-top: 20px;
-  text-align: left;
   max-width: 800px;
+  margin: 0 auto;
 }
+
 .jogo {
-  cursor: pointer;
+  background-color: #292929;
+  padding: 15px;
+  margin: 10px 0;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
+
+.time {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
   margin-bottom: 10px;
 }
+
+.ver-estatisticas {
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
 .estatisticas {
   margin-top: 10px;
-  padding-left: 20px;
 }
