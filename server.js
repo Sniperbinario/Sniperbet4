@@ -9,6 +9,11 @@ const port = process.env.PORT || 10000;
 
 app.use(cors());
 
+// Rota leve para confirmar que está rodando
+app.get("/", (req, res) => {
+  res.send("SniperBet rodando!");
+});
+
 const headers = {
   'X-RapidAPI-Key': process.env.API_KEY_FOOTBALL,
   'X-RapidAPI-Host': 'api-football-v1.p.rapidapi.com'
@@ -16,9 +21,8 @@ const headers = {
 
 const ligas = [39, 140, 135];
 
-// Função para buscar últimos 5 jogos e calcular estatísticas + formatação de placar
-const buscarEstatisticas = async (timeId) => {
-  const url = \`https://api-football-v1.p.rapidapi.com/v3/fixtures?team=\${timeId}&season=2024&last=5\`;
+const buscarEstatisticas = async (teamId) => {
+  const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?team=${teamId}&season=2024&last=5`;
   const response = await fetch(url, { headers });
   const data = await response.json();
 
@@ -32,12 +36,12 @@ const buscarEstatisticas = async (timeId) => {
   };
 
   for (const jogo of jogos) {
-    const isCasa = jogo.teams.home.id === timeId;
+    const isCasa = jogo.teams.home.id === teamId;
     const golsFeitos = isCasa ? jogo.goals.home : jogo.goals.away;
     const golsSofridos = isCasa ? jogo.goals.away : jogo.goals.home;
     const adversario = isCasa ? jogo.teams.away.name : jogo.teams.home.name;
     const dataJogo = new Date(jogo.fixture.date).toLocaleDateString('pt-BR');
-    stats.ultimosJogos.push(\`\${dataJogo} - \${golsFeitos}x\${golsSofridos} vs \${adversario}\`);
+    stats.ultimosJogos.push(`${dataJogo} - ${golsFeitos}x${golsSofridos} vs ${adversario}`);
 
     stats.mediaGolsFeitos += golsFeitos;
     stats.mediaGolsSofridos += golsSofridos;
@@ -56,9 +60,8 @@ const buscarEstatisticas = async (timeId) => {
   return stats;
 };
 
-// Função para buscar posição na tabela
 const buscarPosicaoTabela = async (leagueId, teamId) => {
-  const url = \`https://api-football-v1.p.rapidapi.com/v3/standings?league=\${leagueId}&season=2024\`;
+  const url = `https://api-football-v1.p.rapidapi.com/v3/standings?league=${leagueId}&season=2024`;
   const response = await fetch(url, { headers });
   const data = await response.json();
   const tabela = data.response[0]?.league?.standings[0];
@@ -66,18 +69,19 @@ const buscarPosicaoTabela = async (leagueId, teamId) => {
   return timeInfo ? timeInfo.rank : null;
 };
 
-// Rota principal
+// Rota real chamada pelo frontend (pesada)
 app.get('/ultimos-jogos', async (req, res) => {
   try {
     const hoje = new Date().toISOString().split('T')[0];
-    const jogos = [];
 
-    for (const liga of ligas) {
-      const url = \`https://api-football-v1.p.rapidapi.com/v3/fixtures?league=\${liga}&season=2024&date=\${hoje}\`;
-      const response = await fetch(url, { headers });
-      const data = await response.json();
-      jogos.push(...data.response.map(jogo => ({ ...jogo, ligaId: liga })));
-    }
+    const jogos = (await Promise.all(
+      ligas.map(async (liga) => {
+        const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?league=${liga}&season=2024&date=${hoje}`;
+        const response = await fetch(url, { headers });
+        const data = await response.json();
+        return data.response.map(j => ({ ...j, ligaId: liga }));
+      })
+    )).flat();
 
     const jogosCompletos = await Promise.all(jogos.map(async (jogo) => {
       const home = jogo.teams.home;
@@ -108,8 +112,8 @@ app.get('/ultimos-jogos', async (req, res) => {
           mediaEscanteios: estatisticasAway.mediaEscanteios,
           mediaCartoes: estatisticasAway.mediaCartoes
         },
-        ultimosJogosCasa: estatisticasHome.ultimosJogos,
-        ultimosJogosFora: estatisticasAway.ultimosJogos,
+        ultimosJogosCasa: estatisticasHome.ultimosJogos || [],
+        ultimosJogosFora: estatisticasAway.ultimosJogos || [],
         posicaoCasa,
         posicaoFora
       };
@@ -123,5 +127,5 @@ app.get('/ultimos-jogos', async (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(\`Servidor rodando na porta \${port}\`);
+  console.log(`Servidor rodando na porta ${port}`);
 });
