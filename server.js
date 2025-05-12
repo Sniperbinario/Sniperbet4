@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
 require('dotenv').config();
+
 const app = express();
 const port = process.env.PORT || 10000;
 
@@ -14,17 +15,74 @@ const headers = {
 
 const ligas = [39, 140, 135];
 
+const buscarUltimos5Jogos = async (timeId) => {
+  const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?team=${timeId}&season=2024&last=5`;
+  const response = await fetch(url, { headers });
+  const data = await response.json();
+
+  const stats = {
+    mediaGolsFeitos: 0,
+    mediaGolsSofridos: 0,
+    mediaEscanteios: 0,
+    mediaCartoes: 0,
+  };
+
+  data.response.forEach(jogo => {
+    const isCasa = jogo.teams.home.id === timeId;
+    const golsFeitos = isCasa ? jogo.goals.home : jogo.goals.away;
+    const golsSofridos = isCasa ? jogo.goals.away : jogo.goals.home;
+
+    stats.mediaGolsFeitos += golsFeitos;
+    stats.mediaGolsSofridos += golsSofridos;
+    stats.mediaEscanteios += jogo.statistics?.[0]?.statistics?.find(e => e.type === 'Corner Kicks')?.value || 0;
+    stats.mediaCartoes += jogo.statistics?.[0]?.statistics?.find(e => e.type === 'Yellow Cards')?.value || 0;
+  });
+
+  const total = data.response.length;
+  if (total > 0) {
+    stats.mediaGolsFeitos = (stats.mediaGolsFeitos / total).toFixed(2);
+    stats.mediaGolsSofridos = (stats.mediaGolsSofridos / total).toFixed(2);
+    stats.mediaEscanteios = (stats.mediaEscanteios / total).toFixed(2);
+    stats.mediaCartoes = (stats.mediaCartoes / total).toFixed(2);
+  }
+
+  return stats;
+};
+
 app.get('/ultimos-jogos', async (req, res) => {
   try {
-    const resultados = [];
+    const hoje = new Date().toISOString().split('T')[0];
+    const jogos = [];
+
     for (const liga of ligas) {
-      const response = await fetch(`https://api-football-v1.p.rapidapi.com/v3/fixtures?league=${liga}&season=2024&date=${new Date().toISOString().split('T')[0]}`, { headers });
+      const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?league=${liga}&season=2024&date=${hoje}`;
+      const response = await fetch(url, { headers });
       const data = await response.json();
-      resultados.push(...data.response);
+      jogos.push(...data.response);
     }
-    res.json({ response: resultados });
+
+    const jogosComDados = await Promise.all(jogos.map(async (jogo) => {
+      const home = jogo.teams.home;
+      const away = jogo.teams.away;
+
+      const estatisticasHome = await buscarUltimos5Jogos(home.id);
+      const estatisticasAway = await buscarUltimos5Jogos(away.id);
+
+      return {
+        data: jogo.fixture.date,
+        horario: new Date(jogo.fixture.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        timeCasa: home.name,
+        timeFora: away.name,
+        logoCasa: home.logo,
+        logoFora: away.logo,
+        estatisticasHome,
+        estatisticasAway
+      };
+    }));
+
+    res.json({ jogos: jogosComDados });
   } catch (err) {
-    console.error(err);
+    console.error('Erro ao buscar jogos:', err);
     res.status(500).json({ erro: 'Erro ao buscar jogos' });
   }
 });
