@@ -10,29 +10,47 @@
   <h1>SniperBet - Últimos Jogos dos Campeonatos</h1>
   <div class="box" id="jogos">Carregando...</div>
 
-  <script>
-    fetch("https://sniperbet4.onrender.com/ultimos-jogos")
-      .then(res => res.json())
-      .then(data => {
-        const jogos = data.response;
-        let html = "";
-        jogos.forEach(jogo => {
-          const dataHora = new Date(jogo.fixture.date);
-          const dataFormatada = dataHora.toLocaleDateString('pt-BR');
-          const horaFormatada = dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  <script>fetch("https://sniperbet4.onrender.com/ultimos-jogos")
+  .then(res => res.json())
+  .then(data => {
+    const jogos = data.response;
+    let html = "";
+    jogos.forEach((jogo, index) => {
+      const data = new Date(jogo.fixture.date);
+      const dia = data.toLocaleDateString("pt-BR");
+      const hora = data.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' });
+      const home = jogo.teams.home.name;
+      const away = jogo.teams.away.name;
+      const homeLogo = jogo.teams.home.logo;
+      const awayLogo = jogo.teams.away.logo;
+      const statsHome = jogo.teams.home.stats;
+      const statsAway = jogo.teams.away.stats;
 
-          const home = jogo.teams.home.name;
-          const away = jogo.teams.away.name;
-          const golsHome = jogo.goals.home ?? "-";
-          const golsAway = jogo.goals.away ?? "-";
+      html += `
+        <div class="jogo" onclick="mostrarEstatisticas(${index})">
+          ${dia} ${hora}: <img src="${homeLogo}" width="20"/> ${home} - x - ${away} <img src="${awayLogo}" width="20"/>
+          <div id="stats-${index}" class="estatisticas" style="display:none;">
+            <p><strong>${home} (últimos 5 jogos):</strong><br/>
+              Gols marcados: ${statsHome.golsFeitos} | Gols sofridos: ${statsHome.golsSofridos}<br/>
+              Cartões: ${statsHome.cartoes} | Escanteios: ${statsHome.escanteios}</p>
+            <p><strong>${away} (últimos 5 jogos):</strong><br/>
+              Gols marcados: ${statsAway.golsFeitos} | Gols sofridos: ${statsAway.golsSofridos}<br/>
+              Cartões: ${statsAway.cartoes} | Escanteios: ${statsAway.escanteios}</p>
+          </div>
+        </div>
+      `;
+    });
+    document.getElementById("jogos").innerHTML = html;
+  })
+  .catch(() => {
+    document.getElementById("jogos").innerHTML = "<p>Erro ao carregar dados!</p>";
+  });
 
-          html += `<p>${dataFormatada} ${horaFormatada}: ${home} ${golsHome} x ${golsAway} ${away}</p>`;
-        });
-        document.getElementById("jogos").innerHTML = html;
-      })
-      .catch(() => {
-        document.getElementById("jogos").innerHTML = "<p>Erro ao carregar dados!</p>";
-      });
+function mostrarEstatisticas(index) {
+  const el = document.getElementById(`stats-${index}`);
+  el.style.display = el.style.display === "none" ? "block" : "none";
+}
+
   </script>
 </body>
 </html>
