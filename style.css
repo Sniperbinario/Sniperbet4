@@ -1,6 +1,6 @@
 
 body {
-  background-color: #111;
+  background-color: #121212;
   color: #eee;
   font-family: Arial, sans-serif;
   padding: 20px;
@@ -14,14 +14,31 @@ h1 {
   margin: auto;
 }
 .jogo {
-  background: #222;
+  background: #1e1e1e;
   padding: 15px;
-  border-radius: 8px;
+  border-radius: 10px;
   margin-bottom: 20px;
-  box-shadow: 0 0 5px #000;
+  box-shadow: 0 0 10px #000;
 }
-.alerta {
-  color: #00ff00;
-  font-weight: bold;
-  font-size: 16px;
+.time {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 0;
+}
+button.ver-estatisticas {
+  padding: 8px 16px;
+  background-color: #0066ff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.estatisticas {
+  background-color: #292929;
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 14px;
 }
