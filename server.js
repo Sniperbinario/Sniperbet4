@@ -10,7 +10,7 @@ const port = process.env.PORT || 10000;
 app.use(cors());
 
 app.get("/", (req, res) => {
-  res.send("SniperBet backend rodando com Série B incluída!");
+  res.send("SniperBet backend rodando com desfalques e destaques!");
 });
 
 const headers = {
@@ -18,8 +18,7 @@ const headers = {
   'X-RapidAPI-Host': 'api-football-v1.p.rapidapi.com'
 };
 
-// Inclui a Série B do Brasileirão (ID: 71)
-const ligas = [39, 140, 135, 71];
+const ligas = [39, 140, 135, 71, 78, 13]; // Premier, La Liga, Serie A, Série B, Série A BR, Libertadores
 
 const buscarEstatisticas = async (teamId) => {
   const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?team=${teamId}&season=2024&last=5`;
@@ -68,18 +67,38 @@ const buscarPosicaoTabela = async (leagueId, teamId) => {
   return timeInfo ? timeInfo.rank : null;
 };
 
+const buscarDesfalques = async (teamId) => {
+  const url = `https://api-football-v1.p.rapidapi.com/v3/injuries?team=${teamId}&season=2024`;
+  const response = await fetch(url, { headers });
+  const data = await response.json();
+  return data.response.map(j => j.player.name);
+};
+
+const buscarDestaque = async (teamId) => {
+  const url = `https://api-football-v1.p.rapidapi.com/v3/players?team=${teamId}&season=2024`;
+  const response = await fetch(url, { headers });
+  const data = await response.json();
+  const jogadores = data.response;
+  if (!jogadores.length) return "N/D";
+  const destaque = jogadores.reduce((prev, curr) => {
+    const pGols = prev.statistics?.[0]?.goals?.total || 0;
+    const cGols = curr.statistics?.[0]?.goals?.total || 0;
+    return cGols > pGols ? curr : prev;
+  });
+  return destaque.player.name || "N/D";
+};
+
 app.get('/ultimos-jogos', async (req, res) => {
   try {
     const hoje = new Date().toISOString().split('T')[0];
+    const jogos = [];
 
-    const jogos = (await Promise.all(
-      ligas.map(async (liga) => {
-        const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?league=${liga}&season=2024&date=${hoje}`;
-        const response = await fetch(url, { headers });
-        const data = await response.json();
-        return data.response.map(j => ({ ...j, ligaId: liga }));
-      })
-    )).flat();
+    for (const liga of ligas) {
+      const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?league=${liga}&season=2024&date=${hoje}`;
+      const response = await fetch(url, { headers });
+      const data = await response.json();
+      jogos.push(...data.response.map(j => ({ ...j, ligaId: liga })));
+    }
 
     const jogosCompletos = await Promise.all(jogos.map(async (jogo) => {
       const home = jogo.teams.home;
@@ -91,27 +110,33 @@ app.get('/ultimos-jogos', async (req, res) => {
       const posicaoCasa = await buscarPosicaoTabela(jogo.ligaId, home.id);
       const posicaoFora = await buscarPosicaoTabela(jogo.ligaId, away.id);
 
+      const desfalquesCasa = await buscarDesfalques(home.id);
+      const desfalquesFora = await buscarDesfalques(away.id);
+
+      const destaqueCasa = await buscarDestaque(home.id);
+      const destaqueFora = await buscarDestaque(away.id);
+
       return {
         data: jogo.fixture.date,
-        horario: new Date(jogo.fixture.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        horario: new Date(jogo.fixture.date).toLocaleTimeString('pt-BR', {
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZone: 'America/Sao_Paulo'
+        }),
         timeCasa: home.name,
         timeFora: away.name,
         logoCasa: home.logo,
         logoFora: away.logo,
-        estatisticasHome: {
-          mediaGolsFeitos: estatisticasHome.mediaGolsFeitos,
-          mediaGolsSofridos: estatisticasHome.mediaGolsSofridos,
-          mediaEscanteios: estatisticasHome.mediaEscanteios
-        },
-        estatisticasAway: {
-          mediaGolsFeitos: estatisticasAway.mediaGolsFeitos,
-          mediaGolsSofridos: estatisticasAway.mediaGolsSofridos,
-          mediaEscanteios: estatisticasAway.mediaEscanteios
-        },
-        ultimosJogosCasa: estatisticasHome.ultimosJogos || [],
-        ultimosJogosFora: estatisticasAway.ultimosJogos || [],
+        estatisticasHome,
+        estatisticasAway,
+        ultimosJogosCasa: estatisticasHome.ultimosJogos,
+        ultimosJogosFora: estatisticasAway.ultimosJogos,
         posicaoCasa,
-        posicaoFora
+        posicaoFora,
+        desfalquesCasa,
+        desfalquesFora,
+        destaqueCasa,
+        destaqueFora
       };
     }));
 
