@@ -9,16 +9,12 @@ const port = process.env.PORT || 10000;
 
 app.use(cors());
 
-app.get("/", (req, res) => {
-  res.send("SniperBet backend rodando com desfalques e destaques!");
-});
-
 const headers = {
   'X-RapidAPI-Key': process.env.API_KEY_FOOTBALL,
   'X-RapidAPI-Host': 'api-football-v1.p.rapidapi.com'
 };
 
-const ligas = [39, 140, 135, 71, 78, 13]; // Premier, La Liga, Serie A, Série B, Série A BR, Libertadores
+const ligas = [39, 140, 135, 71, 78, 13]; // Incluindo Libertadores (13)
 
 const buscarEstatisticas = async (teamId) => {
   const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?team=${teamId}&season=2024&last=5`;
@@ -38,12 +34,12 @@ const buscarEstatisticas = async (teamId) => {
     const golsFeitos = isCasa ? jogo.goals.home : jogo.goals.away;
     const golsSofridos = isCasa ? jogo.goals.away : jogo.goals.home;
     const adversario = isCasa ? jogo.teams.away.name : jogo.teams.home.name;
+    const local = isCasa ? "(casa)" : "(fora)";
     const dataJogo = new Date(jogo.fixture.date).toLocaleDateString('pt-BR');
-    stats.ultimosJogos.push(`${dataJogo} - ${golsFeitos}x${golsSofridos} vs ${adversario}`);
+    stats.ultimosJogos.push(`${dataJogo} – ${golsFeitos}x${golsSofridos} vs ${adversario} ${local}`);
 
     const estatisticas = jogo.statistics?.flat() || [];
     stats.mediaEscanteios += estatisticas.find(e => e.type === 'Corner Kicks')?.value || 0;
-
     stats.mediaGolsFeitos += golsFeitos;
     stats.mediaGolsSofridos += golsSofridos;
   }
@@ -71,7 +67,8 @@ const buscarDesfalques = async (teamId) => {
   const url = `https://api-football-v1.p.rapidapi.com/v3/injuries?team=${teamId}&season=2024`;
   const response = await fetch(url, { headers });
   const data = await response.json();
-  return data.response.map(j => j.player.name);
+  const nomes = data.response.map(j => j.player.name);
+  return [...new Set(nomes)];
 };
 
 const buscarDestaque = async (teamId) => {
@@ -88,6 +85,20 @@ const buscarDestaque = async (teamId) => {
   return destaque.player.name || "N/D";
 };
 
+const buscarInfoTime = async (teamId) => {
+  const url = `https://api-football-v1.p.rapidapi.com/v3/teams?id=${teamId}`;
+  const response = await fetch(url, { headers });
+  const data = await response.json();
+  const info = data.response[0]?.team || {};
+  return {
+    nome: info.name || 'N/D',
+    sigla: info.code || 'N/D',
+    pais: info.country || 'N/D',
+    fundacao: info.founded || 'N/D',
+    estadio: data.response[0]?.venue?.name || 'N/D'
+  };
+};
+
 app.get('/ultimos-jogos', async (req, res) => {
   try {
     const hoje = new Date().toISOString().split('T')[0];
@@ -97,6 +108,7 @@ app.get('/ultimos-jogos', async (req, res) => {
       const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?league=${liga}&season=2024&date=${hoje}`;
       const response = await fetch(url, { headers });
       const data = await response.json();
+      console.log(`Liga ${liga} retornou ${data.response.length} jogos`);
       jogos.push(...data.response.map(j => ({ ...j, ligaId: liga })));
     }
 
@@ -106,22 +118,19 @@ app.get('/ultimos-jogos', async (req, res) => {
 
       const estatisticasHome = await buscarEstatisticas(home.id);
       const estatisticasAway = await buscarEstatisticas(away.id);
-
       const posicaoCasa = await buscarPosicaoTabela(jogo.ligaId, home.id);
       const posicaoFora = await buscarPosicaoTabela(jogo.ligaId, away.id);
-
       const desfalquesCasa = await buscarDesfalques(home.id);
       const desfalquesFora = await buscarDesfalques(away.id);
-
       const destaqueCasa = await buscarDestaque(home.id);
       const destaqueFora = await buscarDestaque(away.id);
+      const infoCasa = await buscarInfoTime(home.id);
+      const infoFora = await buscarInfoTime(away.id);
 
       return {
         data: jogo.fixture.date,
         horario: new Date(jogo.fixture.date).toLocaleTimeString('pt-BR', {
-          hour: '2-digit',
-          minute: '2-digit',
-          timeZone: 'America/Sao_Paulo'
+          hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo'
         }),
         timeCasa: home.name,
         timeFora: away.name,
@@ -136,7 +145,9 @@ app.get('/ultimos-jogos', async (req, res) => {
         desfalquesCasa,
         desfalquesFora,
         destaqueCasa,
-        destaqueFora
+        destaqueFora,
+        infoCasa,
+        infoFora
       };
     }));
 
