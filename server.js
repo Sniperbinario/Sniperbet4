@@ -9,9 +9,8 @@ const port = process.env.PORT || 10000;
 
 app.use(cors());
 
-// Rota leve para confirmar que está rodando
 app.get("/", (req, res) => {
-  res.send("SniperBet rodando!");
+  res.send("SniperBet backend rodando com Série B incluída!");
 });
 
 const headers = {
@@ -19,7 +18,8 @@ const headers = {
   'X-RapidAPI-Host': 'api-football-v1.p.rapidapi.com'
 };
 
-const ligas = [39, 140, 135];
+// Inclui a Série B do Brasileirão (ID: 71)
+const ligas = [39, 140, 135, 71];
 
 const buscarEstatisticas = async (teamId) => {
   const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?team=${teamId}&season=2024&last=5`;
@@ -31,7 +31,6 @@ const buscarEstatisticas = async (teamId) => {
     mediaGolsFeitos: 0,
     mediaGolsSofridos: 0,
     mediaEscanteios: 0,
-    mediaCartoes: 0,
     ultimosJogos: []
   };
 
@@ -43,10 +42,11 @@ const buscarEstatisticas = async (teamId) => {
     const dataJogo = new Date(jogo.fixture.date).toLocaleDateString('pt-BR');
     stats.ultimosJogos.push(`${dataJogo} - ${golsFeitos}x${golsSofridos} vs ${adversario}`);
 
+    const estatisticas = jogo.statistics?.flat() || [];
+    stats.mediaEscanteios += estatisticas.find(e => e.type === 'Corner Kicks')?.value || 0;
+
     stats.mediaGolsFeitos += golsFeitos;
     stats.mediaGolsSofridos += golsSofridos;
-    stats.mediaEscanteios += jogo.statistics?.[0]?.statistics?.find(e => e.type === 'Corner Kicks')?.value || 0;
-    stats.mediaCartoes += jogo.statistics?.[0]?.statistics?.find(e => e.type === 'Yellow Cards')?.value || 0;
   }
 
   const total = jogos.length;
@@ -54,7 +54,6 @@ const buscarEstatisticas = async (teamId) => {
     stats.mediaGolsFeitos = (stats.mediaGolsFeitos / total).toFixed(2);
     stats.mediaGolsSofridos = (stats.mediaGolsSofridos / total).toFixed(2);
     stats.mediaEscanteios = (stats.mediaEscanteios / total).toFixed(2);
-    stats.mediaCartoes = (stats.mediaCartoes / total).toFixed(2);
   }
 
   return stats;
@@ -69,7 +68,6 @@ const buscarPosicaoTabela = async (leagueId, teamId) => {
   return timeInfo ? timeInfo.rank : null;
 };
 
-// Rota real chamada pelo frontend (pesada)
 app.get('/ultimos-jogos', async (req, res) => {
   try {
     const hoje = new Date().toISOString().split('T')[0];
@@ -103,14 +101,12 @@ app.get('/ultimos-jogos', async (req, res) => {
         estatisticasHome: {
           mediaGolsFeitos: estatisticasHome.mediaGolsFeitos,
           mediaGolsSofridos: estatisticasHome.mediaGolsSofridos,
-          mediaEscanteios: estatisticasHome.mediaEscanteios,
-          mediaCartoes: estatisticasHome.mediaCartoes
+          mediaEscanteios: estatisticasHome.mediaEscanteios
         },
         estatisticasAway: {
           mediaGolsFeitos: estatisticasAway.mediaGolsFeitos,
           mediaGolsSofridos: estatisticasAway.mediaGolsSofridos,
-          mediaEscanteios: estatisticasAway.mediaEscanteios,
-          mediaCartoes: estatisticasAway.mediaCartoes
+          mediaEscanteios: estatisticasAway.mediaEscanteios
         },
         ultimosJogosCasa: estatisticasHome.ultimosJogos || [],
         ultimosJogosFora: estatisticasAway.ultimosJogos || [],
