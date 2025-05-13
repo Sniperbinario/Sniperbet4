@@ -1,69 +1,47 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>SniperBet - Estatísticas dos Jogos</title>
-  <link rel="stylesheet" href="style.css"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SniperBet - Análise Ao Vivo</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>SniperBet - Estatísticas dos Jogos</h1>
-  <div class="box" id="jogos">Carregando jogos...</div>
+  <h1>SniperBet - Análise Ao Vivo</h1>
+  <div class="box" id="analise">Carregando dados ao vivo...</div>
 
   <script>
-    async function carregarJogos() {
-      const res = await fetch("https://sniperbet4.onrender.com/ultimos-jogos");
+    async function carregarAoVivo() {
+      const res = await fetch("https://sniperbet4.onrender.com/ao-vivo");
       const data = await res.json();
-      const container = document.getElementById("jogos");
+      const container = document.getElementById("analise");
       container.innerHTML = "";
 
+      if (!data.jogos || data.jogos.length === 0) {
+        container.innerHTML = "<p>Nenhum jogo ao vivo com escanteios sendo analisado.</p>";
+        return;
+      }
+
       data.jogos.forEach(jogo => {
-        const bloco = document.createElement("div");
-        bloco.className = "jogo";
+        const card = document.createElement("div");
+        card.className = "jogo";
 
-        bloco.innerHTML = `
-          <p><strong>${new Date(jogo.data).toLocaleDateString('pt-BR')} ${jogo.horario}</strong></p>
-          <div class="time">
-            <img src="${jogo.logoCasa}" alt="${jogo.timeCasa}" width="30"/> ${jogo.timeCasa}
-            <span> x </span>
-            ${jogo.timeFora} <img src="${jogo.logoFora}" alt="${jogo.timeFora}" width="30"/>
-          </div>
-          <button class="ver-estatisticas">Ver estatísticas</button>
-          <div class="estatisticas" style="display:none">
-            <h4>${jogo.timeCasa}</h4>
-            <p>📌 Posição na tabela: ${jogo.posicaoCasa || 'N/D'}</p>
-            <p>📊 Média de Gols Feitos (últimos 5): ${jogo.estatisticasHome.mediaGolsFeitos}</p>
-            <p>📊 Média de Gols Sofridos (últimos 5): ${jogo.estatisticasHome.mediaGolsSofridos}</p>
-            <p>📊 Média de Escanteios (últimos 5): ${jogo.estatisticasHome.mediaEscanteios}</p>
-            <p>🩼 Desfalques: ${jogo.desfalquesCasa.length > 0 ? jogo.desfalquesCasa.join(", ") : 'Nenhum'}</p>
-            <p>🌟 Jogador em Destaque: ${jogo.destaqueCasa || 'N/D'}</p>
-            <p>📊 Últimos 5 jogos:</p>
-            <ul>${jogo.ultimosJogosCasa.map(j => `<li>${j}</li>`).join("")}</ul>
+        const alerta = jogo.alerta ? `<p class="alerta">📢 ${jogo.alerta}</p>` : "";
 
-            <hr>
-
-            <h4>${jogo.timeFora}</h4>
-            <p>📌 Posição na tabela: ${jogo.posicaoFora || 'N/D'}</p>
-            <p>📊 Média de Gols Feitos (últimos 5): ${jogo.estatisticasAway.mediaGolsFeitos}</p>
-            <p>📊 Média de Gols Sofridos (últimos 5): ${jogo.estatisticasAway.mediaGolsSofridos}</p>
-            <p>📊 Média de Escanteios (últimos 5): ${jogo.estatisticasAway.mediaEscanteios}</p>
-            <p>🩼 Desfalques: ${jogo.desfalquesFora.length > 0 ? jogo.desfalquesFora.join(", ") : 'Nenhum'}</p>
-            <p>🌟 Jogador em Destaque: ${jogo.destaqueFora || 'N/D'}</p>
-            <p>📊 Últimos 5 jogos:</p>
-            <ul>${jogo.ultimosJogosFora.map(j => `<li>${j}</li>`).join("")}</ul>
-          </div>
+        card.innerHTML = `
+          <h3>${jogo.timeCasa} x ${jogo.timeFora}</h3>
+          <p>⏱️ Minuto: ${jogo.minuto}</p>
+          <p>🏁 Escanteios: ${jogo.escanteios}</p>
+          ${alerta}
         `;
 
-        bloco.querySelector(".ver-estatisticas").addEventListener("click", () => {
-          const stats = bloco.querySelector(".estatisticas");
-          stats.style.display = stats.style.display === "none" ? "block" : "none";
-        });
-
-        container.appendChild(bloco);
+        container.appendChild(card);
       });
     }
 
-    carregarJogos();
+    setInterval(carregarAoVivo, 10000);
+    carregarAoVivo();
   </script>
 </body>
 </html>
