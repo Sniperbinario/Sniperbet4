@@ -1,5 +1,6 @@
+
 {
-  "name": "sniperbet-server",
+  "name": "sniperbet-api",
   "version": "1.0.0",
   "main": "server.js",
   "type": "commonjs",
