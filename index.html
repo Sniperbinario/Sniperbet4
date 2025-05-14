@@ -12,7 +12,7 @@
 
   <script>
     async function carregarJogos() {
-      const res = await fetch("/ultimos-jogos");
+      const res = await fetch("https://sniperbet4.onrender.com/ultimos-jogos");
       const data = await res.json();
       const container = document.getElementById("jogos");
       container.innerHTML = "";
