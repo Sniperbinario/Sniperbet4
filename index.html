@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -21,6 +22,10 @@
         const bloco = document.createElement("div");
         bloco.className = "jogo";
 
+        function formatarJogo(info) {
+          return `<li>${info.data} — ${info.timeMandante} ${info.placar} ${info.timeVisitante}</li>`;
+        }
+
         bloco.innerHTML = `
           <p><strong>${new Date(jogo.data).toLocaleDateString('pt-BR')} ${jogo.horario}</strong></p>
           <div class="time">
@@ -35,9 +40,11 @@
             <p>📊 Média de Gols Feitos (últimos 5 jogos): ${jogo.estatisticasHome.mediaGolsFeitos}</p>
             <p>📊 Média de Gols Sofridos (últimos 5 jogos): ${jogo.estatisticasHome.mediaGolsSofridos}</p>
             <p>📊 Média de Escanteios (últimos 5 jogos): ${jogo.estatisticasHome.mediaEscanteios}</p>
+            <p>📊 Média de Cartões (últimos 5 jogos): ${jogo.estatisticasHome.mediaCartoes}</p>
+            <p>📊 Média de Chutes (últimos 5 jogos): ${jogo.estatisticasHome.mediaChutes}</p>
             <p>🌟 Jogador em Destaque: ${jogo.destaqueCasa || 'N/D'}</p>
             <p>📊 Últimos 5 jogos:</p>
-            <ul>${jogo.ultimosJogosCasa.map(j => `<li>${j}</li>`).join("")}</ul>
+            <ul>${jogo.ultimosJogosCasa.map(formatarJogo).join("")}</ul>
 
             <hr>
 
@@ -46,9 +53,11 @@
             <p>📊 Média de Gols Feitos (últimos 5 jogos): ${jogo.estatisticasAway.mediaGolsFeitos}</p>
             <p>📊 Média de Gols Sofridos (últimos 5 jogos): ${jogo.estatisticasAway.mediaGolsSofridos}</p>
             <p>📊 Média de Escanteios (últimos 5 jogos): ${jogo.estatisticasAway.mediaEscanteios}</p>
+            <p>📊 Média de Cartões (últimos 5 jogos): ${jogo.estatisticasAway.mediaCartoes}</p>
+            <p>📊 Média de Chutes (últimos 5 jogos): ${jogo.estatisticasAway.mediaChutes}</p>
             <p>🌟 Jogador em Destaque: ${jogo.destaqueFora || 'N/D'}</p>
             <p>📊 Últimos 5 jogos:</p>
-            <ul>${jogo.ultimosJogosFora.map(j => `<li>${j}</li>`).join("")}</ul>
+            <ul>${jogo.ultimosJogosFora.map(formatarJogo).join("")}</ul>
           </div>
         `;
 
