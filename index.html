@@ -22,8 +22,8 @@
         const bloco = document.createElement("div");
         bloco.className = "jogo";
 
-        function formatarJogo(info) {
-          return `<li>${info.data} — ${info.timeMandante} ${info.placar} ${info.timeVisitante}</li>`;
+        function formatarJogo(texto) {
+          return `<li>${texto}</li>`;
         }
 
         bloco.innerHTML = `
@@ -45,9 +45,7 @@
             <p>🌟 Jogador em Destaque: ${jogo.destaqueCasa || 'N/D'}</p>
             <p>📊 Últimos 5 jogos:</p>
             <ul>${jogo.ultimosJogosCasa.map(formatarJogo).join("")}</ul>
-
             <hr>
-
             <h4>${jogo.timeFora}</h4>
             <p>📌 Posição na tabela: ${jogo.posicaoFora || 'N/D'}</p>
             <p>📊 Média de Gols Feitos (últimos 5 jogos): ${jogo.estatisticasAway.mediaGolsFeitos}</p>
