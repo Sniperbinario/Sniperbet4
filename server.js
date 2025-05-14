@@ -1,4 +1,3 @@
-
 const express = require("express");
 const cors = require("cors");
 const fetch = require("node-fetch");
@@ -14,7 +13,7 @@ const headers = {
   "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com",
 };
 
-const ligas = [39, 140, 135, 78, 13]; // Inclui Série B e Libertadores
+const ligas = [39, 140, 135, 78, 13]; // Premier League, La Liga, Serie A, Série B, Libertadores
 
 const buscarEstatisticas = async (timeId) => {
   const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?team=${timeId}&season=2024&last=5`;
@@ -39,12 +38,7 @@ const buscarEstatisticas = async (timeId) => {
     const placar = `${jogo.goals.home}x${jogo.goals.away}`;
     const dataJogo = new Date(jogo.fixture.date).toLocaleDateString("pt-BR");
 
-    ultimosJogos.push({
-      data: dataJogo,
-      timeMandante,
-      timeVisitante,
-      placar,
-    });
+    ultimosJogos.push(`${dataJogo} — ${timeMandante} ${placar} ${timeVisitante}`);
 
     mediaGolsFeitos += golsFeitos;
     mediaGolsSofridos += golsSofridos;
@@ -62,7 +56,7 @@ const buscarEstatisticas = async (timeId) => {
     mediaEscanteios: (mediaEscanteios / total).toFixed(2),
     mediaCartoes: (mediaCartoes / total).toFixed(2),
     mediaChutes: (mediaChutes / total).toFixed(2),
-    ultimosJogos,
+    ultimosJogos
   };
 };
 
