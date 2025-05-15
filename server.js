@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const fetch = require("node-fetch");
+const path = require("path");
 const buscarDadosGoogle = require("./buscarDadosGoogle");
 require("dotenv").config();
 
@@ -8,6 +9,7 @@ const app = express();
 const port = process.env.PORT || 10000;
 
 app.use(cors());
+app.use(express.static(path.join(__dirname))); // serve index.html, style.css etc
 
 const headers = {
   "X-RapidAPI-Key": process.env.API_KEY_FOOTBALL,
@@ -33,17 +35,20 @@ const buscarEstatisticas = async (timeId) => {
     const isCasa = jogo.teams.home.id === timeId;
     const golsFeitos = isCasa ? jogo.goals.home : jogo.goals.away;
     const golsSofridos = isCasa ? jogo.goals.away : jogo.goals.home;
+
     const timeMandante = jogo.teams.home.name;
     const timeVisitante = jogo.teams.away.name;
     const placar = `${jogo.goals.home}x${jogo.goals.away}`;
     const dataJogo = new Date(jogo.fixture.date).toLocaleDateString("pt-BR");
     const local = isCasa ? "(casa)" : "(fora)";
 
-    ultimosJogos.push({ texto: `${dataJogo} — ${timeMandante} ${placar} ${timeVisitante} ${local}` });
+    ultimosJogos.push({
+      texto: `${dataJogo} — ${timeMandante} ${placar} ${timeVisitante} ${local}`
+    });
 
     mediaGolsFeitos += golsFeitos;
     mediaGolsSofridos += golsSofridos;
-    mediaEscanteios += 5;
+    mediaEscanteios += 5; // valor temporário
     mediaCartoes += 2;
     mediaChutes += 6;
   }
@@ -92,10 +97,11 @@ app.get("/ultimos-jogos", async (req, res) => {
 
         const estatisticasHome = await buscarEstatisticas(home.id);
         const estatisticasAway = await buscarEstatisticas(away.id);
+
         const posicaoCasa = await buscarPosicaoTabela(jogo.ligaId, home.id);
         const posicaoFora = await buscarPosicaoTabela(jogo.ligaId, away.id);
 
-        const horarioBrasilia = new Date(jogo.fixture.date).toLocaleTimeString("pt-BR", {
+        const horarioBrasilia = new Date(jogo.fixture.date).toLocaleString("pt-BR", {
           timeZone: "America/Sao_Paulo",
           hour: "2-digit",
           minute: "2-digit"
@@ -113,7 +119,7 @@ app.get("/ultimos-jogos", async (req, res) => {
           posicaoCasa,
           posicaoFora,
           ultimosJogosCasa: estatisticasHome.ultimosJogos,
-          ultimosJogosFora: estatisticasAway.ultimosJogos,
+          ultimosJogosFora: estatisticasAway.ultimosJogos
         };
       })
     );
@@ -136,6 +142,11 @@ app.get("/analise-ao-vivo", async (req, res) => {
   } catch (erro) {
     res.status(500).json({ erro: "Erro ao buscar dados ao vivo", detalhe: erro.message });
   }
+});
+
+// ✅ ROTA PARA O PAINEL HTML
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
 app.listen(port, () => {
