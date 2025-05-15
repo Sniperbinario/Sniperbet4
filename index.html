@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>SniperBet - Estatísticas dos Jogos</title>
   <link rel="stylesheet" href="style.css"/>
+  <style>
+    .ultimos-jogos li {
+      padding: 4px 0;
+      border-bottom: 1px solid #333;
+      font-weight: bold;
+      color: #ccc;
+    }
+  </style>
 </head>
 <body>
   <h1>SniperBet - Estatísticas dos Jogos</h1>
@@ -39,14 +47,8 @@
             <p>📊 Média de Cartões (últimos 5 jogos): ${jogo.estatisticasHome.mediaCartoes}</p>
             <p>📊 Média de Chutes (últimos 5 jogos): ${jogo.estatisticasHome.mediaChutes}</p>
             <p>📊 Últimos 5 jogos:</p>
-            <ul>
-              ${jogo.ultimosJogosCasa.map(j => `
-                <li>
-                  <img src="${j.logoCasa}" width="20" style="vertical-align:middle; margin-right:5px;"/>
-                  ${j.texto}
-                  <img src="${j.logoFora}" width="20" style="vertical-align:middle; margin-left:5px;"/>
-                </li>
-              `).join("")}
+            <ul class="ultimos-jogos">
+              ${jogo.ultimosJogosCasa.map(j => `<li>${j.texto}</li>`).join("")}
             </ul>
             <hr>
             <h4>${jogo.timeFora}</h4>
@@ -57,26 +59,18 @@
             <p>📊 Média de Cartões (últimos 5 jogos): ${jogo.estatisticasAway.mediaCartoes}</p>
             <p>📊 Média de Chutes (últimos 5 jogos): ${jogo.estatisticasAway.mediaChutes}</p>
             <p>📊 Últimos 5 jogos:</p>
-            <ul>
-              ${jogo.ultimosJogosFora.map(j => `
-                <li>
-                  <img src="${j.logoCasa}" width="20" style="vertical-align:middle; margin-right:5px;"/>
-                  ${j.texto}
-                  <img src="${j.logoFora}" width="20" style="vertical-align:middle; margin-left:5px;"/>
-                </li>
-              `).join("")}
+            <ul class="ultimos-jogos">
+              ${jogo.ultimosJogosFora.map(j => `<li>${j.texto}</li>`).join("")}
             </ul>
           </div>
           <div class="ao-vivo" style="display:none; margin-top:10px; background:#111; padding:10px; border-radius:8px;"></div>
         `;
 
-        // Botão estatísticas
         bloco.querySelector(".ver-estatisticas").addEventListener("click", () => {
           const stats = bloco.querySelector(".estatisticas");
           stats.style.display = stats.style.display === "none" ? "block" : "none";
         });
 
-        // Botão robô ao vivo
         bloco.querySelector(".ver-ao-vivo").addEventListener("click", async () => {
           const aoVivoDiv = bloco.querySelector(".ao-vivo");
           aoVivoDiv.innerHTML = "🔄 Buscando dados ao vivo...";
