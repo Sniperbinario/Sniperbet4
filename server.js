@@ -30,7 +30,7 @@ const buscarEstatisticasJogo = async (fixtureId) => {
 };
 
 const buscarEstatisticas = async (timeId) => {
-  const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?team=${timeId}&season=2024&last=10`;
+  const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?team=${timeId}&season=2024&last=20`;
   const response = await fetch(url, { headers });
   const data = await response.json();
 
@@ -42,7 +42,10 @@ const buscarEstatisticas = async (timeId) => {
   let mediaChutesGol = 0;
   const ultimosJogos = [];
 
-  const jogosFinalizados = data.response.filter(j => j.fixture.status.short === "FT").slice(-5);
+  const jogosFinalizados = data.response
+    .filter(j => j.fixture.status.short === "FT")
+    .sort((a, b) => new Date(b.fixture.date) - new Date(a.fixture.date))
+    .slice(0, 5);
 
   for (const jogo of jogosFinalizados) {
     const isCasa = jogo.teams.home.id === timeId;
@@ -105,7 +108,10 @@ app.get("/ultimos-jogos", async (req, res) => {
     const jogos = [];
 
     for (const liga of ligas) {
-      const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?league=${liga}&season=2024&date=${hoje}`;
+      const url = liga === 13
+        ? `https://api-football-v1.p.rapidapi.com/v3/fixtures?league=13&season=2024`
+        : `https://api-football-v1.p.rapidapi.com/v3/fixtures?league=${liga}&season=2024&date=${hoje}`;
+
       const response = await fetch(url, { headers });
       const data = await response.json();
 
