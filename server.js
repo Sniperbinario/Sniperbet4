@@ -33,20 +33,17 @@ const buscarEstatisticas = async (timeId) => {
     const isCasa = jogo.teams.home.id === timeId;
     const golsFeitos = isCasa ? jogo.goals.home : jogo.goals.away;
     const golsSofridos = isCasa ? jogo.goals.away : jogo.goals.home;
-
     const timeMandante = jogo.teams.home.name;
     const timeVisitante = jogo.teams.away.name;
     const placar = `${jogo.goals.home}x${jogo.goals.away}`;
     const dataJogo = new Date(jogo.fixture.date).toLocaleDateString("pt-BR");
     const local = isCasa ? "(casa)" : "(fora)";
 
-    ultimosJogos.push({
-      texto: `${dataJogo} — ${timeMandante} ${placar} ${timeVisitante} ${local}`
-    });
+    ultimosJogos.push({ texto: `${dataJogo} — ${timeMandante} ${placar} ${timeVisitante} ${local}` });
 
     mediaGolsFeitos += golsFeitos;
     mediaGolsSofridos += golsSofridos;
-    mediaEscanteios += 5; // pode substituir por valor real no futuro
+    mediaEscanteios += 5;
     mediaCartoes += 2;
     mediaChutes += 6;
   }
@@ -95,11 +92,10 @@ app.get("/ultimos-jogos", async (req, res) => {
 
         const estatisticasHome = await buscarEstatisticas(home.id);
         const estatisticasAway = await buscarEstatisticas(away.id);
-
         const posicaoCasa = await buscarPosicaoTabela(jogo.ligaId, home.id);
         const posicaoFora = await buscarPosicaoTabela(jogo.ligaId, away.id);
 
-        const horarioBrasilia = new Date(jogo.fixture.date).toLocaleString("pt-BR", {
+        const horarioBrasilia = new Date(jogo.fixture.date).toLocaleTimeString("pt-BR", {
           timeZone: "America/Sao_Paulo",
           hour: "2-digit",
           minute: "2-digit"
