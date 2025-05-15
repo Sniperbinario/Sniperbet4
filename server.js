@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const fetch = require("node-fetch");
 const path = require("path");
-const buscarDadosGoogle = require("./buscarDadosGoogle");
+const puppeteer = require("puppeteer");
 require("dotenv").config();
 
 const app = express();
@@ -19,7 +19,7 @@ const headers = {
 const ligas = [39, 140, 135, 78, 13]; // Premier League, La Liga, Serie A, Série B, Libertadores
 
 const buscarEstatisticas = async (timeId) => {
-  const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?team=${timeId}&season=2024&last=5`;
+  const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?team=${timeId}&season=2024&last=10`;
   const response = await fetch(url, { headers });
   const data = await response.json();
 
@@ -27,11 +27,13 @@ const buscarEstatisticas = async (timeId) => {
   let mediaGolsSofridos = 0;
   let mediaEscanteios = 0;
   let mediaCartoes = 0;
-  let mediaChutes = 0;
-
+  let mediaChutesTotais = 0;
+  let mediaChutesGol = 0;
   const ultimosJogos = [];
 
-  for (const jogo of data.response) {
+  const jogosFinalizados = data.response.filter(j => j.fixture.status.short === "FT").slice(-5);
+
+  for (const jogo of jogosFinalizados) {
     const isCasa = jogo.teams.home.id === timeId;
     const golsFeitos = isCasa ? jogo.goals.home : jogo.goals.away;
     const golsSofridos = isCasa ? jogo.goals.away : jogo.goals.home;
@@ -46,21 +48,26 @@ const buscarEstatisticas = async (timeId) => {
       texto: `${dataJogo} — ${timeMandante} ${placar} ${timeVisitante} ${local}`
     });
 
+    const stats = jogo.statistics?.[0]?.statistics || [];
+    const getStat = (type) => stats.find(s => s.type === type)?.value || 0;
+
     mediaGolsFeitos += golsFeitos;
     mediaGolsSofridos += golsSofridos;
-    mediaEscanteios += 5; // valor temporário
-    mediaCartoes += 2;
-    mediaChutes += 6;
+    mediaEscanteios += getStat("Corner Kicks");
+    mediaCartoes += getStat("Yellow Cards");
+    mediaChutesTotais += getStat("Total Shots");
+    mediaChutesGol += getStat("Shots on Goal");
   }
 
-  const total = data.response.length || 1;
+  const total = jogosFinalizados.length || 1;
 
   return {
     mediaGolsFeitos: (mediaGolsFeitos / total).toFixed(2),
     mediaGolsSofridos: (mediaGolsSofridos / total).toFixed(2),
     mediaEscanteios: (mediaEscanteios / total).toFixed(2),
     mediaCartoes: (mediaCartoes / total).toFixed(2),
-    mediaChutes: (mediaChutes / total).toFixed(2),
+    mediaChutesTotais: (mediaChutesTotais / total).toFixed(2),
+    mediaChutesGol: (mediaChutesGol / total).toFixed(2),
     ultimosJogos
   };
 };
@@ -136,9 +143,25 @@ app.get("/analise-ao-vivo", async (req, res) => {
   if (!jogo) return res.status(400).json({ erro: "Parâmetro 'jogo' é obrigatório" });
 
   try {
-    const dados = await buscarDadosGoogle(jogo);
-    dados.ultimaAtualizacao = new Date().toLocaleString("pt-BR");
-    res.json(dados);
+    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
+    await page.goto(`https://www.google.com/search?q=${encodeURIComponent(jogo)}+ao+vivo`, {
+      waitUntil: "domcontentloaded",
+    });
+
+    await page.waitForSelector("div[data-attrid='kc:/sports_team:scores']", { timeout: 15000 });
+
+    const estatisticas = await page.evaluate(() => {
+      const container = document.querySelector("div[data-attrid='kc:/sports_team:scores']");
+      return container ? { textoBruto: container.innerText } : null;
+    });
+
+    await browser.close();
+
+    if (!estatisticas) return res.status(500).json({ erro: "Estatísticas ao vivo não encontradas" });
+
+    estatisticas.ultimaAtualizacao = new Date().toLocaleString("pt-BR");
+    res.json(estatisticas);
   } catch (erro) {
     res.status(500).json({ erro: "Erro ao buscar dados ao vivo", detalhe: erro.message });
   }
