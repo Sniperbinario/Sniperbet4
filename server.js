@@ -34,6 +34,19 @@ const buscarEstatisticas = async (timeId) => {
   const response = await fetch(url, { headers });
   const data = await response.json();
 
+  if (!data.response || !Array.isArray(data.response)) {
+    console.error(`❌ Estatísticas não disponíveis para time ${timeId}`);
+    return {
+      mediaGolsFeitos: '0.00',
+      mediaGolsSofridos: '0.00',
+      mediaEscanteios: '0.00',
+      mediaCartoes: '0.00',
+      mediaChutesTotais: '0.00',
+      mediaChutesGol: '0.00',
+      ultimosJogos: []
+    };
+  }
+
   let mediaGolsFeitos = 0;
   let mediaGolsSofridos = 0;
   let mediaEscanteios = 0;
