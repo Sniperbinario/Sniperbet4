@@ -19,10 +19,15 @@ const headers = {
 const ligas = [39, 140, 135, 78, 13];
 
 const buscarEstatisticasJogo = async (fixtureId) => {
-  const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures/statistics?fixture=${fixtureId}`;
-  const response = await fetch(url, { headers });
-  const data = await response.json();
-  return data.response;
+  try {
+    const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures/statistics?fixture=${fixtureId}`;
+    const response = await fetch(url, { headers });
+    const data = await response.json();
+    return data.response;
+  } catch (err) {
+    console.error("Erro buscarEstatisticasJogo", err.message);
+    return [];
+  }
 };
 
 const buscarEstatisticas = async (timeId) => {
@@ -58,15 +63,18 @@ const buscarEstatisticas = async (timeId) => {
     mediaGolsFeitos += golsFeitos;
     mediaGolsSofridos += golsSofridos;
 
-    // Buscar estatísticas detalhadas da partida
-    const statsDetalhadas = await buscarEstatisticasJogo(jogo.fixture.id);
-    const stats = statsDetalhadas?.[0]?.statistics || [];
-    const getStat = (type) => stats.find(s => s.type === type)?.value || 0;
+    try {
+      const statsDetalhadas = await buscarEstatisticasJogo(jogo.fixture.id);
+      const stats = statsDetalhadas?.[0]?.statistics || [];
+      const getStat = (type) => stats.find(s => s.type === type)?.value || 0;
 
-    mediaEscanteios += getStat("Corner Kicks");
-    mediaCartoes += getStat("Yellow Cards");
-    mediaChutesTotais += getStat("Total Shots");
-    mediaChutesGol += getStat("Shots on Goal");
+      mediaEscanteios += getStat("Corner Kicks");
+      mediaCartoes += getStat("Yellow Cards");
+      mediaChutesTotais += getStat("Total Shots");
+      mediaChutesGol += getStat("Shots on Goal");
+    } catch (e) {
+      console.warn("Estatísticas ausentes para fixture", jogo.fixture.id);
+    }
   }
 
   const total = jogosFinalizados.length || 1;
