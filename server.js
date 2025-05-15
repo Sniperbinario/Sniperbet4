@@ -62,13 +62,12 @@ const buscarEstatisticas = async (timeId) => {
       texto: `${dataJogo} — ${timeMandante} ${placar} ${timeVisitante} ${local}`
     });
 
-    mediaGolsFeitos += golsFeitos;
-    mediaGolsSofridos += golsSofridos;
-
     const statsDetalhadas = await buscarEstatisticasJogo(jogo.fixture.id);
     const stats = statsDetalhadas?.[0]?.statistics || [];
     const getStat = (type) => stats.find(s => s.type === type)?.value || 0;
 
+    mediaGolsFeitos += golsFeitos;
+    mediaGolsSofridos += golsSofridos;
     mediaEscanteios += getStat("Corner Kicks");
     mediaCartoes += getStat("Yellow Cards");
     mediaChutesTotais += getStat("Total Shots");
@@ -108,16 +107,25 @@ app.get("/ultimos-jogos", async (req, res) => {
     const jogos = [];
 
     for (const liga of ligas) {
-      const url = liga === 13
-        ? `https://api-football-v1.p.rapidapi.com/v3/fixtures?league=13&season=2024`
-        : `https://api-football-v1.p.rapidapi.com/v3/fixtures?league=${liga}&season=2024&date=${hoje}`;
+      try {
+        const url = liga === 13
+          ? `https://api-football-v1.p.rapidapi.com/v3/fixtures?league=13&season=2024`
+          : `https://api-football-v1.p.rapidapi.com/v3/fixtures?league=${liga}&season=2024&date=${hoje}`;
 
-      const response = await fetch(url, { headers });
-      const data = await response.json();
+        const response = await fetch(url, { headers });
+        const data = await response.json();
 
-      console.log(`📅 Liga ${liga} retornou ${data.response.length} jogos para ${hoje}`);
+        if (!data.response || !Array.isArray(data.response)) {
+          console.error(`❌ Liga ${liga} retornou formato inválido`, data);
+          continue;
+        }
 
-      jogos.push(...data.response.map((jogo) => ({ ...jogo, ligaId: liga })));
+        console.log(`✅ Liga ${liga} retornou ${data.response.length} jogos para ${hoje}`);
+
+        jogos.push(...data.response.map((jogo) => ({ ...jogo, ligaId: liga })));
+      } catch (erroLiga) {
+        console.error(`❌ Erro ao buscar jogos da liga ${liga}:`, erroLiga.message);
+      }
     }
 
     const jogosCompletos = await Promise.all(
