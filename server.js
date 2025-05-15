@@ -2,21 +2,21 @@ const express = require("express");
 const cors = require("cors");
 const fetch = require("node-fetch");
 const path = require("path");
-const puppeteer = require("puppeteer");
+const buscarDadosGoogle = require("./buscarDadosGoogle");
 require("dotenv").config();
 
 const app = express();
 const port = process.env.PORT || 10000;
 
 app.use(cors());
-app.use(express.static(path.join(__dirname))); // serve index.html, style.css etc
+app.use(express.static(path.join(__dirname)));
 
 const headers = {
   "X-RapidAPI-Key": process.env.API_KEY_FOOTBALL,
   "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com",
 };
 
-const ligas = [39, 140, 135, 78, 13]; // Premier League, La Liga, Serie A, Série B, Libertadores
+const ligas = [39, 140, 135, 78, 13];
 
 const buscarEstatisticas = async (timeId) => {
   const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?team=${timeId}&season=2024&last=10`;
@@ -143,31 +143,14 @@ app.get("/analise-ao-vivo", async (req, res) => {
   if (!jogo) return res.status(400).json({ erro: "Parâmetro 'jogo' é obrigatório" });
 
   try {
-    const browser = await puppeteer.launch({ headless: true });
-    const page = await browser.newPage();
-    await page.goto(`https://www.google.com/search?q=${encodeURIComponent(jogo)}+ao+vivo`, {
-      waitUntil: "domcontentloaded",
-    });
-
-    await page.waitForSelector("div[data-attrid='kc:/sports_team:scores']", { timeout: 15000 });
-
-    const estatisticas = await page.evaluate(() => {
-      const container = document.querySelector("div[data-attrid='kc:/sports_team:scores']");
-      return container ? { textoBruto: container.innerText } : null;
-    });
-
-    await browser.close();
-
-    if (!estatisticas) return res.status(500).json({ erro: "Estatísticas ao vivo não encontradas" });
-
-    estatisticas.ultimaAtualizacao = new Date().toLocaleString("pt-BR");
-    res.json(estatisticas);
+    const dados = await buscarDadosGoogle(jogo);
+    dados.ultimaAtualizacao = new Date().toLocaleString("pt-BR");
+    res.json(dados);
   } catch (erro) {
     res.status(500).json({ erro: "Erro ao buscar dados ao vivo", detalhe: erro.message });
   }
 });
 
-// ✅ ROTA PARA O PAINEL HTML
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
