@@ -100,13 +100,17 @@ const buscarPosicaoTabela = async (ligaId, teamId) => {
 
 app.get("/ultimos-jogos", async (req, res) => {
   try {
-    const hoje = new Date().toISOString().split("T")[0];
+    const brasiliaDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+    const hoje = brasiliaDate.toISOString().split('T')[0];
     const jogos = [];
 
     for (const liga of ligas) {
       const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?league=${liga}&season=2024&date=${hoje}`;
       const response = await fetch(url, { headers });
       const data = await response.json();
+
+      console.log(`📅 Liga ${liga} retornou ${data.response.length} jogos para ${hoje}`);
+
       jogos.push(...data.response.map((jogo) => ({ ...jogo, ligaId: liga })));
     }
 
