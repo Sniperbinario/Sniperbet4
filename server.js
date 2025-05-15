@@ -18,6 +18,13 @@ const headers = {
 
 const ligas = [39, 140, 135, 78, 13];
 
+const buscarEstatisticasJogo = async (fixtureId) => {
+  const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures/statistics?fixture=${fixtureId}`;
+  const response = await fetch(url, { headers });
+  const data = await response.json();
+  return data.response;
+};
+
 const buscarEstatisticas = async (timeId) => {
   const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?team=${timeId}&season=2024&last=10`;
   const response = await fetch(url, { headers });
@@ -48,11 +55,14 @@ const buscarEstatisticas = async (timeId) => {
       texto: `${dataJogo} — ${timeMandante} ${placar} ${timeVisitante} ${local}`
     });
 
-    const stats = jogo.statistics?.[0]?.statistics || [];
-    const getStat = (type) => stats.find(s => s.type === type)?.value || 0;
-
     mediaGolsFeitos += golsFeitos;
     mediaGolsSofridos += golsSofridos;
+
+    // Buscar estatísticas detalhadas da partida
+    const statsDetalhadas = await buscarEstatisticasJogo(jogo.fixture.id);
+    const stats = statsDetalhadas?.[0]?.statistics || [];
+    const getStat = (type) => stats.find(s => s.type === type)?.value || 0;
+
     mediaEscanteios += getStat("Corner Kicks");
     mediaCartoes += getStat("Yellow Cards");
     mediaChutesTotais += getStat("Total Shots");
@@ -147,6 +157,7 @@ app.get("/analise-ao-vivo", async (req, res) => {
     dados.ultimaAtualizacao = new Date().toLocaleString("pt-BR");
     res.json(dados);
   } catch (erro) {
+    console.error("Erro robô ao vivo:", erro);
     res.status(500).json({ erro: "Erro ao buscar dados ao vivo", detalhe: erro.message });
   }
 });
