@@ -25,7 +25,6 @@ const buscarEstatisticasJogo = async (fixtureId) => {
     const data = await response.json();
     return data.response;
   } catch (err) {
-    console.error("Erro buscarEstatisticasJogo", err.message);
     return [];
   }
 };
@@ -63,18 +62,14 @@ const buscarEstatisticas = async (timeId) => {
     mediaGolsFeitos += golsFeitos;
     mediaGolsSofridos += golsSofridos;
 
-    try {
-      const statsDetalhadas = await buscarEstatisticasJogo(jogo.fixture.id);
-      const stats = statsDetalhadas?.[0]?.statistics || [];
-      const getStat = (type) => stats.find(s => s.type === type)?.value || 0;
+    const statsDetalhadas = await buscarEstatisticasJogo(jogo.fixture.id);
+    const stats = statsDetalhadas?.[0]?.statistics || [];
+    const getStat = (type) => stats.find(s => s.type === type)?.value || 0;
 
-      mediaEscanteios += getStat("Corner Kicks");
-      mediaCartoes += getStat("Yellow Cards");
-      mediaChutesTotais += getStat("Total Shots");
-      mediaChutesGol += getStat("Shots on Goal");
-    } catch (e) {
-      console.warn("Estatísticas ausentes para fixture", jogo.fixture.id);
-    }
+    mediaEscanteios += getStat("Corner Kicks");
+    mediaCartoes += getStat("Yellow Cards");
+    mediaChutesTotais += getStat("Total Shots");
+    mediaChutesGol += getStat("Shots on Goal");
   }
 
   const total = jogosFinalizados.length || 1;
@@ -165,7 +160,6 @@ app.get("/analise-ao-vivo", async (req, res) => {
     dados.ultimaAtualizacao = new Date().toLocaleString("pt-BR");
     res.json(dados);
   } catch (erro) {
-    console.error("Erro robô ao vivo:", erro);
     res.status(500).json({ erro: "Erro ao buscar dados ao vivo", detalhe: erro.message });
   }
 });
