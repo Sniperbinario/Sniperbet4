@@ -36,23 +36,19 @@ const buscarEstatisticas = async (timeId) => {
 
     const timeMandante = jogo.teams.home.name;
     const timeVisitante = jogo.teams.away.name;
-    const logoMandante = jogo.teams.home.logo;
-    const logoVisitante = jogo.teams.away.logo;
     const placar = `${jogo.goals.home}x${jogo.goals.away}`;
     const dataJogo = new Date(jogo.fixture.date).toLocaleDateString("pt-BR");
     const local = isCasa ? "(casa)" : "(fora)";
 
     ultimosJogos.push({
-      texto: `${dataJogo} — ${timeMandante} ${placar} ${timeVisitante} ${local}`,
-      logoCasa: logoMandante,
-      logoFora: logoVisitante
+      texto: `${dataJogo} — ${timeMandante} ${placar} ${timeVisitante} ${local}`
     });
 
     mediaGolsFeitos += golsFeitos;
     mediaGolsSofridos += golsSofridos;
-    mediaEscanteios += 5; // simulado
-    mediaCartoes += 2; // simulado
-    mediaChutes += 6; // simulado
+    mediaEscanteios += 5; // pode substituir por valor real no futuro
+    mediaCartoes += 2;
+    mediaChutes += 6;
   }
 
   const total = data.response.length || 1;
