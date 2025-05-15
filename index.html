@@ -29,6 +29,7 @@
             ${jogo.timeFora} <img src="${jogo.logoFora}" alt="${jogo.timeFora}" width="30"/>
           </div>
           <button class="ver-estatisticas">Ver estatísticas</button>
+          <button class="ver-ao-vivo">Ver análise ao vivo</button>
           <div class="estatisticas" style="display:none">
             <h4>${jogo.timeCasa}</h4>
             <p>📌 Posição na tabela: ${jogo.posicaoCasa || 'N/D'}</p>
@@ -66,11 +67,37 @@
               `).join("")}
             </ul>
           </div>
+          <div class="ao-vivo" style="display:none; margin-top:10px; background:#111; padding:10px; border-radius:8px;"></div>
         `;
 
+        // Botão estatísticas
         bloco.querySelector(".ver-estatisticas").addEventListener("click", () => {
           const stats = bloco.querySelector(".estatisticas");
           stats.style.display = stats.style.display === "none" ? "block" : "none";
+        });
+
+        // Botão robô ao vivo
+        bloco.querySelector(".ver-ao-vivo").addEventListener("click", async () => {
+          const aoVivoDiv = bloco.querySelector(".ao-vivo");
+          aoVivoDiv.innerHTML = "🔄 Buscando dados ao vivo...";
+          aoVivoDiv.style.display = "block";
+
+          const response = await fetch(`https://sniperbet4.onrender.com/analise-ao-vivo?jogo=${jogo.timeCasa} x ${jogo.timeFora}`);
+          const dados = await response.json();
+
+          if (dados.erro) {
+            aoVivoDiv.innerHTML = `<p style="color:red;">Erro: ${dados.erro}</p>`;
+          } else {
+            aoVivoDiv.innerHTML = `
+              <h4>📡 Análise ao Vivo (${dados.fonte})</h4>
+              <p><strong>Tempo:</strong> ${dados.tempo}</p>
+              <p><strong>Placar:</strong> ${dados.gols}</p>
+              <p><strong>Escanteios:</strong> ${dados.escanteios}</p>
+              <p><strong>Chutes:</strong> ${dados.chutes}</p>
+              <p><strong>Cartões:</strong> ${dados.cartoes}</p>
+              <p style="font-size: 12px; opacity: 0.6;">⏱ Atualizado: ${dados.ultimaAtualizacao}</p>
+            `;
+          }
         });
 
         container.appendChild(bloco);
