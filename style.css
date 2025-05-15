@@ -1,18 +1,20 @@
-
 body {
   background-color: #121212;
   color: #eee;
   font-family: Arial, sans-serif;
   padding: 20px;
 }
+
 h1 {
   text-align: center;
   margin-bottom: 30px;
 }
+
 .box {
   max-width: 800px;
   margin: auto;
 }
+
 .jogo {
   background: #1e1e1e;
   padding: 15px;
@@ -20,6 +22,7 @@ h1 {
   margin-bottom: 20px;
   box-shadow: 0 0 10px #000;
 }
+
 .time {
   display: flex;
   justify-content: center;
@@ -27,18 +30,18 @@ h1 {
   gap: 12px;
   margin: 10px 0;
 }
-button.ver-estatisticas {
+
+button.ver-estatisticas,
+button.ver-ao-vivo {
   padding: 8px 16px;
   background-color: #0066ff;
   color: white;
   border: none;
   border-radius: 5px;
   cursor: pointer;
+  margin: 4px 6px 0 0;
 }
-.estatisticas {
-  background-color: #292929;
-  margin-top: 10px;
-  padding: 10px;
-  border-radius: 8px;
-  font-size: 14px;
+
+button.ver-ao-vivo {
+  background-color: #00bb33;
 }
