@@ -17,34 +17,26 @@ const headers = {
 };
 
 const ligas = [39, 140, 135, 78, 13];
+const temporada = new Date().getFullYear();
 
 const buscarEstatisticasJogo = async (fixtureId) => {
   try {
     const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures/statistics?fixture=${fixtureId}`;
     const response = await fetch(url, { headers });
     const data = await response.json();
-    return data.response;
+    return data.response || [];
   } catch (err) {
     return [];
   }
 };
 
 const buscarEstatisticas = async (timeId) => {
-  const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?team=${timeId}&season=2024&last=20`;
+  const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?team=${timeId}&season=${temporada}&last=20`;
   const response = await fetch(url, { headers });
   const data = await response.json();
 
   if (!data.response || !Array.isArray(data.response)) {
-    console.error(`❌ Estatísticas não disponíveis para time ${timeId}`);
-    return {
-      mediaGolsFeitos: '0.00',
-      mediaGolsSofridos: '0.00',
-      mediaEscanteios: '0.00',
-      mediaCartoes: '0.00',
-      mediaChutesTotais: '0.00',
-      mediaChutesGol: '0.00',
-      ultimosJogos: []
-    };
+    return estatisticasZeradas();
   }
 
   let mediaGolsFeitos = 0;
@@ -77,14 +69,14 @@ const buscarEstatisticas = async (timeId) => {
 
     const statsDetalhadas = await buscarEstatisticasJogo(jogo.fixture.id);
     const stats = statsDetalhadas?.[0]?.statistics || [];
-    const getStat = (type) => stats.find(s => s.type === type)?.value || 0;
+    const getStat = (type) => stats.find(s => s.type === type)?.value;
 
     mediaGolsFeitos += golsFeitos;
     mediaGolsSofridos += golsSofridos;
-    mediaEscanteios += getStat("Corner Kicks");
-    mediaCartoes += getStat("Yellow Cards");
-    mediaChutesTotais += getStat("Total Shots");
-    mediaChutesGol += getStat("Shots on Goal");
+    mediaEscanteios += getStat("Corner Kicks") ?? 5;
+    mediaCartoes += getStat("Yellow Cards") ?? 2;
+    mediaChutesTotais += getStat("Total Shots") ?? 6;
+    mediaChutesGol += getStat("Shots on Goal") ?? 2;
   }
 
   const total = jogosFinalizados.length || 1;
@@ -100,9 +92,19 @@ const buscarEstatisticas = async (timeId) => {
   };
 };
 
+const estatisticasZeradas = () => ({
+  mediaGolsFeitos: '0.00',
+  mediaGolsSofridos: '0.00',
+  mediaEscanteios: '0.00',
+  mediaCartoes: '0.00',
+  mediaChutesTotais: '0.00',
+  mediaChutesGol: '0.00',
+  ultimosJogos: []
+});
+
 const buscarPosicaoTabela = async (ligaId, teamId) => {
   try {
-    const url = `https://api-football-v1.p.rapidapi.com/v3/standings?league=${ligaId}&season=2024`;
+    const url = `https://api-football-v1.p.rapidapi.com/v3/standings?league=${ligaId}&season=${temporada}`;
     const response = await fetch(url, { headers });
     const data = await response.json();
     const tabela = data.response[0]?.league?.standings[0];
@@ -122,22 +124,17 @@ app.get("/ultimos-jogos", async (req, res) => {
     for (const liga of ligas) {
       try {
         const url = liga === 13
-          ? `https://api-football-v1.p.rapidapi.com/v3/fixtures?league=13&season=2024`
-          : `https://api-football-v1.p.rapidapi.com/v3/fixtures?league=${liga}&season=2024&date=${hoje}`;
+          ? `https://api-football-v1.p.rapidapi.com/v3/fixtures?league=13&season=${temporada}`
+          : `https://api-football-v1.p.rapidapi.com/v3/fixtures?league=${liga}&season=${temporada}&date=${hoje}`;
 
         const response = await fetch(url, { headers });
         const data = await response.json();
 
-        if (!data.response || !Array.isArray(data.response)) {
-          console.error(`❌ Liga ${liga} retornou formato inválido`, data);
-          continue;
-        }
-
-        console.log(`✅ Liga ${liga} retornou ${data.response.length} jogos para ${hoje}`);
+        if (!data.response || !Array.isArray(data.response)) continue;
 
         jogos.push(...data.response.map((jogo) => ({ ...jogo, ligaId: liga })));
       } catch (erroLiga) {
-        console.error(`❌ Erro ao buscar jogos da liga ${liga}:`, erroLiga.message);
+        console.error(`Erro ao buscar jogos da liga ${liga}:`, erroLiga.message);
       }
     }
 
