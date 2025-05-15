@@ -1,15 +1,19 @@
-const puppeteer = require('puppeteer');
+const chromium = require("chrome-aws-lambda");
+const puppeteer = require("puppeteer-core");
 
 async function buscarDadosGoogle(jogo) {
   const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
+    args: chromium.args,
+    defaultViewport: chromium.defaultViewport,
+    executablePath: await chromium.executablePath,
+    headless: chromium.headless
   });
+
   const page = await browser.newPage();
   const termoBusca = `${jogo} ao vivo site:google.com`;
 
   await page.goto(`https://www.google.com/search?q=${encodeURIComponent(termoBusca)}`, {
-    waitUntil: 'domcontentloaded',
+    waitUntil: "domcontentloaded",
   });
 
   try {
@@ -28,11 +32,11 @@ async function buscarDadosGoogle(jogo) {
     return {
       fonte: "Google",
       textoCompleto: texto,
-      escanteios: (texto.match(/Escanteios\\s+(\\d+)/i) || [])[1] || 'N/D',
-      chutes: (texto.match(/Chutes\\s+(\\d+)/i) || [])[1] || 'N/D',
-      cartoes: (texto.match(/Cartões amarelos\\s+(\\d+)/i) || [])[1] || 'N/D',
-      gols: (texto.match(/(\\d+)\\s+x\\s+(\\d+)/i) || []).slice(1, 3).join('x') || 'N/D',
-      tempo: (texto.match(/\\d+º tempo - \\d+ min/) || [])[0] || 'Em andamento',
+      escanteios: (texto.match(/Escanteios\s+(\d+)/i) || [])[1] || 'N/D',
+      chutes: (texto.match(/Chutes\s+(\d+)/i) || [])[1] || 'N/D',
+      cartoes: (texto.match(/Cartões amarelos\s+(\d+)/i) || [])[1] || 'N/D',
+      gols: (texto.match(/(\d+)\s+x\s+(\d+)/i) || []).slice(1, 3).join('x') || 'N/D',
+      tempo: (texto.match(/\d+º tempo - \d+ min/) || [])[0] || 'Em andamento',
     };
   });
 
