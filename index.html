@@ -1,143 +1,115 @@
-const express = require("express");
-const cors = require("cors");
-const fetch = require("node-fetch");
-const buscarDadosGoogle = require("./buscarDadosGoogle");
-require("dotenv").config();
-
-const app = express();
-const port = process.env.PORT || 10000;
-
-app.use(cors());
-
-const headers = {
-  "X-RapidAPI-Key": process.env.API_KEY_FOOTBALL,
-  "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com",
-};
-
-const ligas = [39, 140, 135, 78, 13]; // Premier League, La Liga, Serie A, Série B, Libertadores
-
-const buscarEstatisticas = async (timeId) => {
-  const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?team=${timeId}&season=2024&last=5`;
-  const response = await fetch(url, { headers });
-  const data = await response.json();
-
-  let mediaGolsFeitos = 0;
-  let mediaGolsSofridos = 0;
-  let mediaEscanteios = 0;
-  let mediaCartoes = 0;
-  let mediaChutes = 0;
-
-  const ultimosJogos = [];
-
-  for (const jogo of data.response) {
-    const isCasa = jogo.teams.home.id === timeId;
-    const golsFeitos = isCasa ? jogo.goals.home : jogo.goals.away;
-    const golsSofridos = isCasa ? jogo.goals.away : jogo.goals.home;
-    const timeMandante = jogo.teams.home.name;
-    const timeVisitante = jogo.teams.away.name;
-    const placar = `${jogo.goals.home}x${jogo.goals.away}`;
-    const dataJogo = new Date(jogo.fixture.date).toLocaleDateString("pt-BR");
-    const local = isCasa ? "(casa)" : "(fora)";
-
-    ultimosJogos.push({ texto: `${dataJogo} — ${timeMandante} ${placar} ${timeVisitante} ${local}` });
-
-    mediaGolsFeitos += golsFeitos;
-    mediaGolsSofridos += golsSofridos;
-    mediaEscanteios += 5;
-    mediaCartoes += 2;
-    mediaChutes += 6;
-  }
-
-  const total = data.response.length || 1;
-
-  return {
-    mediaGolsFeitos: (mediaGolsFeitos / total).toFixed(2),
-    mediaGolsSofridos: (mediaGolsSofridos / total).toFixed(2),
-    mediaEscanteios: (mediaEscanteios / total).toFixed(2),
-    mediaCartoes: (mediaCartoes / total).toFixed(2),
-    mediaChutes: (mediaChutes / total).toFixed(2),
-    ultimosJogos
-  };
-};
-
-const buscarPosicaoTabela = async (ligaId, teamId) => {
-  try {
-    const url = `https://api-football-v1.p.rapidapi.com/v3/standings?league=${ligaId}&season=2024`;
-    const response = await fetch(url, { headers });
-    const data = await response.json();
-    const tabela = data.response[0]?.league?.standings[0];
-    const timeInfo = tabela?.find((entry) => entry.team.id === teamId);
-    return timeInfo?.rank || "N/D";
-  } catch {
-    return "N/D";
-  }
-};
-
-app.get("/ultimos-jogos", async (req, res) => {
-  try {
-    const hoje = new Date().toISOString().split("T")[0];
-    const jogos = [];
-
-    for (const liga of ligas) {
-      const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?league=${liga}&season=2024&date=${hoje}`;
-      const response = await fetch(url, { headers });
-      const data = await response.json();
-      jogos.push(...data.response.map((jogo) => ({ ...jogo, ligaId: liga })));
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SniperBet - Estatísticas dos Jogos</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    .ultimos-jogos li {
+      padding: 4px 0;
+      border-bottom: 1px solid #333;
+      font-weight: bold;
+      color: #ccc;
     }
+    button.ver-ao-vivo {
+      padding: 8px 16px;
+      background-color: #00bb33;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-left: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>SniperBet - Estatísticas dos Jogos</h1>
+  <div class="box" id="jogos">Carregando jogos...</div>
 
-    const jogosCompletos = await Promise.all(
-      jogos.map(async (jogo) => {
-        const home = jogo.teams.home;
-        const away = jogo.teams.away;
+  <script>
+    async function carregarJogos() {
+      const res = await fetch("https://sniperbet4.onrender.com/ultimos-jogos");
+      const data = await res.json();
+      const container = document.getElementById("jogos");
+      container.innerHTML = "";
 
-        const estatisticasHome = await buscarEstatisticas(home.id);
-        const estatisticasAway = await buscarEstatisticas(away.id);
-        const posicaoCasa = await buscarPosicaoTabela(jogo.ligaId, home.id);
-        const posicaoFora = await buscarPosicaoTabela(jogo.ligaId, away.id);
+      data.jogos.forEach(jogo => {
+        const bloco = document.createElement("div");
+        bloco.className = "jogo";
 
-        const horarioBrasilia = new Date(jogo.fixture.date).toLocaleTimeString("pt-BR", {
-          timeZone: "America/Sao_Paulo",
-          hour: "2-digit",
-          minute: "2-digit"
+        const dataFormatada = jogo.data.split("T")[0].split("-").reverse().join("/");
+
+        bloco.innerHTML = `
+          <p><strong>${dataFormatada} ${jogo.horario}</strong></p>
+          <div class="time">
+            <img src="${jogo.logoCasa}" alt="${jogo.timeCasa}" width="30"/> ${jogo.timeCasa}
+            <span> x </span>
+            ${jogo.timeFora} <img src="${jogo.logoFora}" alt="${jogo.timeFora}" width="30"/>
+          </div>
+          <button class="ver-estatisticas">Ver estatísticas</button>
+          <button class="ver-ao-vivo">Ver análise ao vivo</button>
+          <div class="estatisticas" style="display:none">
+            <h4>${jogo.timeCasa}</h4>
+            <p>📌 Posição na tabela: ${jogo.posicaoCasa || 'N/D'}</p>
+            <p>📊 Média de Gols Feitos (últimos 5 jogos): ${jogo.estatisticasHome.mediaGolsFeitos}</p>
+            <p>📊 Média de Gols Sofridos (últimos 5 jogos): ${jogo.estatisticasHome.mediaGolsSofridos}</p>
+            <p>📊 Média de Escanteios (últimos 5 jogos): ${jogo.estatisticasHome.mediaEscanteios}</p>
+            <p>📊 Média de Cartões (últimos 5 jogos): ${jogo.estatisticasHome.mediaCartoes}</p>
+            <p>📊 Média de Chutes (últimos 5 jogos): ${jogo.estatisticasHome.mediaChutes}</p>
+            <p>📊 Últimos 5 jogos:</p>
+            <ul class="ultimos-jogos">
+              ${jogo.ultimosJogosCasa.map(j => `<li>${j.texto}</li>`).join("")}
+            </ul>
+            <hr>
+            <h4>${jogo.timeFora}</h4>
+            <p>📌 Posição na tabela: ${jogo.posicaoFora || 'N/D'}</p>
+            <p>📊 Média de Gols Feitos (últimos 5 jogos): ${jogo.estatisticasAway.mediaGolsFeitos}</p>
+            <p>📊 Média de Gols Sofridos (últimos 5 jogos): ${jogo.estatisticasAway.mediaGolsSofridos}</p>
+            <p>📊 Média de Escanteios (últimos 5 jogos): ${jogo.estatisticasAway.mediaEscanteios}</p>
+            <p>📊 Média de Cartões (últimos 5 jogos): ${jogo.estatisticasAway.mediaCartoes}</p>
+            <p>📊 Média de Chutes (últimos 5 jogos): ${jogo.estatisticasAway.mediaChutes}</p>
+            <p>📊 Últimos 5 jogos:</p>
+            <ul class="ultimos-jogos">
+              ${jogo.ultimosJogosFora.map(j => `<li>${j.texto}</li>`).join("")}
+            </ul>
+          </div>
+          <div class="ao-vivo" style="display:none; margin-top:10px; background:#111; padding:10px; border-radius:8px;"></div>
+        `;
+
+        bloco.querySelector(".ver-estatisticas").addEventListener("click", () => {
+          const stats = bloco.querySelector(".estatisticas");
+          stats.style.display = stats.style.display === "none" ? "block" : "none";
         });
 
-        return {
-          data: jogo.fixture.date,
-          horario: horarioBrasilia,
-          timeCasa: home.name,
-          timeFora: away.name,
-          logoCasa: home.logo,
-          logoFora: away.logo,
-          estatisticasHome,
-          estatisticasAway,
-          posicaoCasa,
-          posicaoFora,
-          ultimosJogosCasa: estatisticasHome.ultimosJogos,
-          ultimosJogosFora: estatisticasAway.ultimosJogos,
-        };
-      })
-    );
+        bloco.querySelector(".ver-ao-vivo").addEventListener("click", async () => {
+          const aoVivoDiv = bloco.querySelector(".ao-vivo");
+          aoVivoDiv.innerHTML = "🔄 Buscando dados ao vivo...";
+          aoVivoDiv.style.display = "block";
 
-    res.json({ jogos: jogosCompletos });
-  } catch (error) {
-    console.error("Erro geral:", error);
-    res.status(500).json({ erro: "Erro ao buscar jogos" });
-  }
-});
+          const response = await fetch(`https://sniperbet4.onrender.com/analise-ao-vivo?jogo=${jogo.timeCasa} x ${jogo.timeFora}`);
+          const dados = await response.json();
 
-app.get("/analise-ao-vivo", async (req, res) => {
-  const jogo = req.query.jogo;
-  if (!jogo) return res.status(400).json({ erro: "Parâmetro 'jogo' é obrigatório" });
+          if (dados.erro) {
+            aoVivoDiv.innerHTML = `<p style="color:red;">Erro: ${dados.erro}</p>`;
+          } else {
+            aoVivoDiv.innerHTML = `
+              <h4>📡 Análise ao Vivo (${dados.fonte})</h4>
+              <p><strong>Tempo:</strong> ${dados.tempo}</p>
+              <p><strong>Placar:</strong> ${dados.gols}</p>
+              <p><strong>Escanteios:</strong> ${dados.escanteios}</p>
+              <p><strong>Chutes:</strong> ${dados.chutes}</p>
+              <p><strong>Cartões:</strong> ${dados.cartoes}</p>
+              <p style="font-size: 12px; opacity: 0.6;">⏱ Atualizado: ${dados.ultimaAtualizacao}</p>
+            `;
+          }
+        });
 
-  try {
-    const dados = await buscarDadosGoogle(jogo);
-    dados.ultimaAtualizacao = new Date().toLocaleString("pt-BR");
-    res.json(dados);
-  } catch (erro) {
-    res.status(500).json({ erro: "Erro ao buscar dados ao vivo", detalhe: erro.message });
-  }
-});
+        container.appendChild(bloco);
+      });
+    }
 
-app.listen(port, () => {
-  console.log(`🔥 SniperBet rodando na porta ${port}`);
-});
+    carregarJogos();
+  </script>
+</body>
+</html>
