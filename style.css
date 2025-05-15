@@ -31,17 +31,11 @@ h1 {
   margin: 10px 0;
 }
 
-button.ver-estatisticas,
-button.ver-ao-vivo {
+button.ver-estatisticas {
   padding: 8px 16px;
   background-color: #0066ff;
   color: white;
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  margin: 4px 6px 0 0;
-}
-
-button.ver-ao-vivo {
-  background-color: #00bb33;
 }
