@@ -4,32 +4,42 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>SniperBet - Estatísticas dos Jogos</title>
-  <link rel="stylesheet" href="style.css"/>
   <style>
     body {
       background-color: #121212;
       color: #eee;
       font-family: Arial, sans-serif;
+      padding: 20px;
     }
-    .ultimos-jogos li {
-      padding: 4px 0;
-      border-bottom: 1px solid #333;
-      font-weight: bold;
-      color: #ccc;
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .box {
+      max-width: 800px;
+      margin: auto;
     }
     .jogo {
       background: #1e1e1e;
-      padding: 20px;
-      margin: 15px 0;
+      padding: 15px;
       border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.4);
+      margin-bottom: 20px;
+      box-shadow: 0 0 10px #000;
     }
-    button {
+    .time {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin: 10px 0;
+    }
+    button.ver-estatisticas,
+    button.ver-ao-vivo {
       padding: 8px 16px;
       border: none;
       border-radius: 5px;
       cursor: pointer;
-      margin: 5px 5px 0 0;
+      margin: 4px 6px 0 0;
     }
     .ver-estatisticas {
       background-color: #008CBA;
@@ -45,6 +55,17 @@
       background: #111;
       padding: 10px;
       border-radius: 8px;
+    }
+    .ultimos-jogos li {
+      padding: 4px 0;
+      border-bottom: 1px solid #333;
+      font-weight: bold;
+      color: #ccc;
+    }
+    .fonte-jogo {
+      font-size: 13px;
+      opacity: 0.6;
+      margin-top: 8px;
     }
   </style>
 </head>
@@ -72,33 +93,34 @@
             <span> x </span>
             ${jogo.timeFora} <img src="${jogo.logoFora}" alt="${jogo.timeFora}" width="30"/>
           </div>
+          <p class="fonte-jogo">📡 Fonte: ${jogo.fonte || 'API-Football'}</p>
           <button class="ver-estatisticas">Ver estatísticas</button>
           <button class="ver-ao-vivo">Ver análise ao vivo</button>
           <div class="estatisticas" style="display:none">
             <h4>${jogo.timeCasa}</h4>
             <p>📌 Posição na tabela: ${jogo.posicaoCasa || 'N/D'}</p>
-            <p>📊 Média de Gols Feitos (últimos 5 jogos): ${jogo.estatisticasHome.mediaGolsFeitos}</p>
-            <p>📊 Média de Gols Sofridos (últimos 5 jogos): ${jogo.estatisticasHome.mediaGolsSofridos}</p>
-            <p>📊 Média de Escanteios (últimos 5 jogos): ${jogo.estatisticasHome.mediaEscanteios}</p>
-            <p>📊 Média de Cartões (últimos 5 jogos): ${jogo.estatisticasHome.mediaCartoes}</p>
-            <p>📊 Média de Chutes Totais (últimos 5 jogos): ${jogo.estatisticasHome.mediaChutesTotais}</p>
-            <p>📊 Média de Chutes a Gol (últimos 5 jogos): ${jogo.estatisticasHome.mediaChutesGol}</p>
+            <p>📊 Média de Gols Feitos (últimos 5 jogos): ${jogo.estatisticasHome?.mediaGolsFeitos || 'N/D'}</p>
+            <p>📊 Média de Gols Sofridos (últimos 5 jogos): ${jogo.estatisticasHome?.mediaGolsSofridos || 'N/D'}</p>
+            <p>📊 Média de Escanteios (últimos 5 jogos): ${jogo.estatisticasHome?.mediaEscanteios || 'N/D'}</p>
+            <p>📊 Média de Cartões (últimos 5 jogos): ${jogo.estatisticasHome?.mediaCartoes || 'N/D'}</p>
+            <p>📊 Média de Chutes Totais (últimos 5 jogos): ${jogo.estatisticasHome?.mediaChutesTotais || 'N/D'}</p>
+            <p>📊 Média de Chutes a Gol (últimos 5 jogos): ${jogo.estatisticasHome?.mediaChutesGol || 'N/D'}</p>
             <p>📊 Últimos 5 jogos:</p>
             <ul class="ultimos-jogos">
-              ${jogo.ultimosJogosCasa.map(j => `<li>${j.texto}</li>`).join("")}
+              ${(jogo.ultimosJogosCasa || []).map(j => `<li>${j.texto}</li>`).join("")}
             </ul>
             <hr>
             <h4>${jogo.timeFora}</h4>
             <p>📌 Posição na tabela: ${jogo.posicaoFora || 'N/D'}</p>
-            <p>📊 Média de Gols Feitos (últimos 5 jogos): ${jogo.estatisticasAway.mediaGolsFeitos}</p>
-            <p>📊 Média de Gols Sofridos (últimos 5 jogos): ${jogo.estatisticasAway.mediaGolsSofridos}</p>
-            <p>📊 Média de Escanteios (últimos 5 jogos): ${jogo.estatisticasAway.mediaEscanteios}</p>
-            <p>📊 Média de Cartões (últimos 5 jogos): ${jogo.estatisticasAway.mediaCartoes}</p>
-            <p>📊 Média de Chutes Totais (últimos 5 jogos): ${jogo.estatisticasAway.mediaChutesTotais}</p>
-            <p>📊 Média de Chutes a Gol (últimos 5 jogos): ${jogo.estatisticasAway.mediaChutesGol}</p>
+            <p>📊 Média de Gols Feitos (últimos 5 jogos): ${jogo.estatisticasAway?.mediaGolsFeitos || 'N/D'}</p>
+            <p>📊 Média de Gols Sofridos (últimos 5 jogos): ${jogo.estatisticasAway?.mediaGolsSofridos || 'N/D'}</p>
+            <p>📊 Média de Escanteios (últimos 5 jogos): ${jogo.estatisticasAway?.mediaEscanteios || 'N/D'}</p>
+            <p>📊 Média de Cartões (últimos 5 jogos): ${jogo.estatisticasAway?.mediaCartoes || 'N/D'}</p>
+            <p>📊 Média de Chutes Totais (últimos 5 jogos): ${jogo.estatisticasAway?.mediaChutesTotais || 'N/D'}</p>
+            <p>📊 Média de Chutes a Gol (últimos 5 jogos): ${jogo.estatisticasAway?.mediaChutesGol || 'N/D'}</p>
             <p>📊 Últimos 5 jogos:</p>
             <ul class="ultimos-jogos">
-              ${jogo.ultimosJogosFora.map(j => `<li>${j.texto}</li>`).join("")}
+              ${(jogo.ultimosJogosFora || []).map(j => `<li>${j.texto}</li>`).join("")}
             </ul>
           </div>
           <div class="ao-vivo"></div>
