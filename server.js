@@ -17,8 +17,8 @@ const headers = {
   "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com",
 };
 
-// CORRIGIDO: IDs atualizados e ordenados
-const ligas = [13, 71, 72, 39, 140, 135]; // Libertadores, Série A, Série B, Premier, La Liga, Serie A ITA
+// Ligas: Libertadores, Série A, Série B, Premier League, La Liga, Serie A ITA
+const ligas = [13, 71, 72, 39, 140, 135];
 const temporada = new Date().getFullYear();
 
 const estatisticasZeradas = () => ({
@@ -121,7 +121,15 @@ app.get("/ultimos-jogos", async (req, res) => {
       const data = await response.json();
       if (!Array.isArray(data.response)) continue;
 
-      // CORRIGIDO: comparando a data dos jogos no fuso de Brasília
+      // 👇 LOG exclusivo para Premier League
+      if (liga === 39) {
+        console.log("📣 DEBUG — Jogos recebidos da Premier League:");
+        data.response.forEach(j => {
+          const dataBrasilia = new Date(j.fixture.date).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+          console.log(`📅 ${dataBrasilia} — ${j.teams.home.name} x ${j.teams.away.name}`);
+        });
+      }
+
       const jogosDoDia = data.response.filter(j => {
         const dataJogoBrasilia = new Date(j.fixture.date).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
         return dataJogoBrasilia === dataHojeBrasilia;
