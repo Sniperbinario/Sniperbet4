@@ -1,3 +1,4 @@
+// ======== server.js ========
 const express = require("express");
 const cors = require("cors");
 const fetch = require("node-fetch");
@@ -17,7 +18,6 @@ const headers = {
   "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com",
 };
 
-// Ligas: Libertadores, Série A, Série B, Premier League, La Liga, Serie A ITA
 const ligas = [13, 71, 72, 39, 140, 135];
 const temporada = new Date().getFullYear();
 
@@ -121,14 +121,12 @@ app.get("/ultimos-jogos", async (req, res) => {
       const data = await response.json();
       if (!Array.isArray(data.response)) continue;
 
-      // 👇 LOG exclusivo para Premier League
-      if (liga === 39) {
-        console.log("📣 DEBUG — Jogos recebidos da Premier League:");
-        data.response.forEach(j => {
-          const dataBrasilia = new Date(j.fixture.date).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
-          console.log(`📅 ${dataBrasilia} — ${j.teams.home.name} x ${j.teams.away.name}`);
-        });
-      }
+      // DEBUG GLOBAL DE TODAS LIGAS
+      console.log(`\n📢 Liga ${liga} retornou ${data.response.length} jogos`);
+      data.response.forEach(j => {
+        const dataBrasilia = new Date(j.fixture.date).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+        console.log(`📅 ${dataBrasilia} — ${j.teams.home.name} x ${j.teams.away.name}`);
+      });
 
       const jogosDoDia = data.response.filter(j => {
         const dataJogoBrasilia = new Date(j.fixture.date).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
