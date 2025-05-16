@@ -60,10 +60,6 @@ const buscarEstatisticas = async (teamId) => {
       const statsEntry = statsData?.response?.find(r => r.team?.id === teamId);
       const stats = statsEntry?.statistics || [];
 
-      if (!stats.length) {
-        console.log(`‼️ Sem estatísticas para ${teamId} - Fixture ${jogo.fixture.id}`);
-      }
-
       const getStat = (tipo) => stats.find(s => s.type === tipo)?.value ?? 0;
 
       mediaGolsFeitos += golsFeitos;
@@ -120,14 +116,14 @@ app.get("/ultimos-jogos", async (req, res) => {
 
     for (const liga of ligas) {
       try {
-        const url = liga === 13
-          ? `https://api-football-v1.p.rapidapi.com/v3/fixtures?league=13&season=${temporada}`
-          : `https://api-football-v1.p.rapidapi.com/v3/fixtures?league=${liga}&season=${temporada}&date=${hoje}`;
-
+        const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?league=${liga}&season=${temporada}&date=${hoje}`;
         const response = await fetch(url, { headers });
         const data = await response.json();
 
-        if (!data.response || !Array.isArray(data.response)) continue;
+        if (!data || !Array.isArray(data.response)) {
+          console.warn(`⚠️ Liga ${liga} sem dados válidos`);
+          continue;
+        }
 
         jogos.push(...data.response.map((jogo) => ({ ...jogo, ligaId: liga })));
       } catch (erroLiga) {
@@ -137,39 +133,45 @@ app.get("/ultimos-jogos", async (req, res) => {
 
     const jogosCompletos = await Promise.all(
       jogos.map(async (jogo) => {
-        const home = jogo.teams.home;
-        const away = jogo.teams.away;
+        try {
+          const home = jogo.teams.home;
+          const away = jogo.teams.away;
 
-        const estatisticasHome = await buscarEstatisticas(home.id);
-        const estatisticasAway = await buscarEstatisticas(away.id);
+          const estatisticasHome = await buscarEstatisticas(home.id);
+          const estatisticasAway = await buscarEstatisticas(away.id);
 
-        const posicaoCasa = await buscarPosicaoTabela(jogo.ligaId, home.id);
-        const posicaoFora = await buscarPosicaoTabela(jogo.ligaId, away.id);
+          const posicaoCasa = await buscarPosicaoTabela(jogo.ligaId, home.id);
+          const posicaoFora = await buscarPosicaoTabela(jogo.ligaId, away.id);
 
-        const horarioBrasilia = new Date(jogo.fixture.date).toLocaleString("pt-BR", {
-          timeZone: "America/Sao_Paulo",
-          hour: "2-digit",
-          minute: "2-digit"
-        });
+          const horarioBrasilia = new Date(jogo.fixture.date).toLocaleString("pt-BR", {
+            timeZone: "America/Sao_Paulo",
+            hour: "2-digit",
+            minute: "2-digit"
+          });
 
-        return {
-          data: jogo.fixture.date,
-          horario: horarioBrasilia,
-          timeCasa: home.name,
-          timeFora: away.name,
-          logoCasa: home.logo,
-          logoFora: away.logo,
-          estatisticasHome,
-          estatisticasAway,
-          posicaoCasa,
-          posicaoFora,
-          ultimosJogosCasa: estatisticasHome.ultimosJogos,
-          ultimosJogosFora: estatisticasAway.ultimosJogos
-        };
+          return {
+            data: jogo.fixture.date,
+            horario: horarioBrasilia,
+            timeCasa: home.name,
+            timeFora: away.name,
+            logoCasa: home.logo,
+            logoFora: away.logo,
+            estatisticasHome,
+            estatisticasAway,
+            posicaoCasa,
+            posicaoFora,
+            ultimosJogosCasa: estatisticasHome.ultimosJogos,
+            ultimosJogosFora: estatisticasAway.ultimosJogos
+          };
+        } catch (erroJogo) {
+          console.error("Erro ao processar jogo específico:", erroJogo.message);
+          return null;
+        }
       })
     );
 
-    res.json({ jogos: jogosCompletos });
+    const jogosFiltrados = jogosCompletos.filter(j => j !== null);
+    res.json({ jogos: jogosFiltrados });
   } catch (error) {
     console.error("Erro geral:", error);
     res.status(500).json({ erro: "Erro ao buscar jogos" });
