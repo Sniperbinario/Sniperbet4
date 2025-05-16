@@ -17,7 +17,7 @@ const headers = {
   "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com",
 };
 
-const ligas = [39, 140, 135, 78, 13];
+const ligas = [39, 140, 135, 78, 13]; // Premier, La Liga, Serie A, Série B, Libertadores
 const temporada = new Date().getFullYear();
 
 const estatisticasZeradas = () => ({
@@ -69,12 +69,11 @@ const buscarEstatisticas = async (teamId) => {
       mediaChutesTotais += getStat("Total Shots");
       mediaChutesGol += getStat("Shots on Goal");
 
+      const dataJogo = new Date(jogo.fixture.date).toLocaleDateString("pt-BR");
       const timeMandante = jogo.teams.home.name;
       const timeVisitante = jogo.teams.away.name;
       const placar = `${jogo.goals.home}x${jogo.goals.away}`;
-      const dataJogo = new Date(jogo.fixture.date).toLocaleDateString("pt-BR");
       const local = isCasa ? "(casa)" : "(fora)";
-
       ultimosJogos.push({ texto: `${dataJogo} — ${timeMandante} ${placar} ${timeVisitante} ${local}` });
     }
 
@@ -115,65 +114,48 @@ app.get("/ultimos-jogos", async (req, res) => {
     const jogos = [];
 
     for (const liga of ligas) {
-      try {
-        const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?league=${liga}&season=${temporada}&date=${hoje}`;
-        const response = await fetch(url, { headers });
-        const data = await response.json();
-
-        if (!data || !Array.isArray(data.response)) {
-          console.warn(`⚠️ Liga ${liga} sem dados válidos`);
-          continue;
-        }
-
-        jogos.push(...data.response.map((jogo) => ({ ...jogo, ligaId: liga })));
-      } catch (erroLiga) {
-        console.error(`Erro ao buscar jogos da liga ${liga}:`, erroLiga.message);
-      }
+      const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?league=${liga}&season=${temporada}&date=${hoje}`;
+      const response = await fetch(url, { headers });
+      const data = await response.json();
+      if (!Array.isArray(data.response)) continue;
+      jogos.push(...data.response.map(j => ({ ...j, ligaId: liga })));
     }
 
-    const jogosCompletos = await Promise.all(
-      jogos.map(async (jogo) => {
-        try {
-          const home = jogo.teams.home;
-          const away = jogo.teams.away;
+    const jogosCompletos = await Promise.all(jogos.map(async (jogo) => {
+      const home = jogo.teams.home;
+      const away = jogo.teams.away;
 
-          const estatisticasHome = await buscarEstatisticas(home.id);
-          const estatisticasAway = await buscarEstatisticas(away.id);
+      const estatisticasHome = await buscarEstatisticas(home.id);
+      const estatisticasAway = await buscarEstatisticas(away.id);
 
-          const posicaoCasa = await buscarPosicaoTabela(jogo.ligaId, home.id);
-          const posicaoFora = await buscarPosicaoTabela(jogo.ligaId, away.id);
+      const posicaoCasa = await buscarPosicaoTabela(jogo.ligaId, home.id);
+      const posicaoFora = await buscarPosicaoTabela(jogo.ligaId, away.id);
 
-          const horarioBrasilia = new Date(jogo.fixture.date).toLocaleString("pt-BR", {
-            timeZone: "America/Sao_Paulo",
-            hour: "2-digit",
-            minute: "2-digit"
-          });
+      const horarioBrasilia = new Date(jogo.fixture.date).toLocaleString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
 
-          return {
-            data: jogo.fixture.date,
-            horario: horarioBrasilia,
-            timeCasa: home.name,
-            timeFora: away.name,
-            logoCasa: home.logo,
-            logoFora: away.logo,
-            estatisticasHome,
-            estatisticasAway,
-            posicaoCasa,
-            posicaoFora,
-            ultimosJogosCasa: estatisticasHome.ultimosJogos,
-            ultimosJogosFora: estatisticasAway.ultimosJogos
-          };
-        } catch (erroJogo) {
-          console.error("Erro ao processar jogo específico:", erroJogo.message);
-          return null;
-        }
-      })
-    );
+      return {
+        data: jogo.fixture.date,
+        horario: horarioBrasilia,
+        timeCasa: home.name,
+        timeFora: away.name,
+        logoCasa: home.logo,
+        logoFora: away.logo,
+        estatisticasHome,
+        estatisticasAway,
+        posicaoCasa,
+        posicaoFora,
+        ultimosJogosCasa: estatisticasHome.ultimosJogos,
+        ultimosJogosFora: estatisticasAway.ultimosJogos
+      };
+    }));
 
-    const jogosFiltrados = jogosCompletos.filter(j => j !== null);
-    res.json({ jogos: jogosFiltrados });
-  } catch (error) {
-    console.error("Erro geral:", error);
+    res.json({ jogos: jogosCompletos });
+  } catch (err) {
+    console.error("Erro geral:", err);
     res.status(500).json({ erro: "Erro ao buscar jogos" });
   }
 });
@@ -195,25 +177,17 @@ app.get("/analise-ao-vivo", async (req, res) => {
       waitUntil: "domcontentloaded",
     });
 
-    await page.waitForSelector("div[jscontroller][data-attrid]", { timeout: 15000 });
-
+    await page.waitForSelector("div[data-attrid]", { timeout: 15000 });
     const dados = await page.evaluate(() => {
-      const container = document.querySelector("div[jscontroller][data-attrid]");
+      const container = document.querySelector("div[data-attrid]");
       const texto = container?.innerText || '';
-
       return {
-        fonte: "Google",
-        textoCompleto: texto,
-        escanteios: (texto.match(/Escanteios\s+(\d+)/i) || [])[1] || 'N/D',
-        chutes: (texto.match(/Chutes\s+(\d+)/i) || [])[1] || 'N/D',
-        cartoes: (texto.match(/Cartões amarelos\s+(\d+)/i) || [])[1] || 'N/D',
-        gols: (texto.match(/(\d+)\s+x\s+(\d+)/i) || []).slice(1, 3).join('x') || 'N/D',
-        tempo: (texto.match(/\d+º tempo - \d+ min/) || [])[0] || 'Em andamento',
+        textoBruto: texto,
+        ultimaAtualizacao: new Date().toLocaleString("pt-BR")
       };
     });
 
     await browser.close();
-    dados.ultimaAtualizacao = new Date().toLocaleString("pt-BR");
     res.json(dados);
   } catch (erro) {
     res.status(500).json({ erro: "Erro ao buscar dados ao vivo", detalhe: erro.message });
