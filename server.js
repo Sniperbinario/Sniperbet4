@@ -1,4 +1,4 @@
-// ======== server.js ========
+// ======== server.js HÍBRIDO (API + Google Backup) ========
 const express = require("express");
 const cors = require("cors");
 const fetch = require("node-fetch");
@@ -20,6 +20,48 @@ const headers = {
 
 const ligas = [13, 71, 72, 39, 140, 135];
 const temporada = new Date().getFullYear();
+
+// Função de backup via Google (simples)
+async function buscarJogosViaGoogle(ligaNome) {
+  const browser = await puppeteer.launch({
+    args: chromium.args,
+    defaultViewport: chromium.defaultViewport,
+    executablePath: await chromium.executablePath,
+    headless: chromium.headless
+  });
+
+  const page = await browser.newPage();
+  await page.goto(`https://www.google.com/search?q=${encodeURIComponent(ligaNome + ' jogos hoje')}`);
+
+  const jogos = await page.evaluate(() => {
+    const partidas = [];
+    const elementos = document.querySelectorAll("div.imso_gs__tli");
+    elementos.forEach(el => {
+      const times = el.innerText.match(/.+ vs .+/);
+      if (times) partidas.push(times[0]);
+    });
+    return partidas;
+  });
+
+  await browser.close();
+
+  // Transforma em estrutura de jogos fallback
+  return jogos.map(nome => ({
+    timeCasa: nome.split(" vs ")[0].trim(),
+    timeFora: nome.split(" vs ")[1].trim(),
+    data: new Date().toISOString(),
+    horario: "--:--",
+    logoCasa: "https://via.placeholder.com/30",
+    logoFora: "https://via.placeholder.com/30",
+    estatisticasHome: {},
+    estatisticasAway: {},
+    posicaoCasa: "N/D",
+    posicaoFora: "N/D",
+    ultimosJogosCasa: [],
+    ultimosJogosFora: [],
+    fonte: "Robô Google"
+  }));
+}
 
 const estatisticasZeradas = () => ({
   mediaGolsFeitos: '0.00',
@@ -121,22 +163,24 @@ app.get("/ultimos-jogos", async (req, res) => {
       const data = await response.json();
       if (!Array.isArray(data.response)) continue;
 
-      // DEBUG GLOBAL DE TODAS LIGAS
-      console.log(`\n📢 Liga ${liga} retornou ${data.response.length} jogos`);
-      data.response.forEach(j => {
-        const dataBrasilia = new Date(j.fixture.date).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
-        console.log(`📅 ${dataBrasilia} — ${j.teams.home.name} x ${j.teams.away.name}`);
-      });
-
       const jogosDoDia = data.response.filter(j => {
         const dataJogoBrasilia = new Date(j.fixture.date).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
         return dataJogoBrasilia === dataHojeBrasilia;
       });
 
-      jogos.push(...jogosDoDia.map(j => ({ ...j, ligaId: liga })));
+      if (jogosDoDia.length === 0) {
+        console.log(`⚠️ Liga ${liga} vazia — puxando via robô...`);
+        const nomeLiga = liga === 39 ? "Premier League" : liga === 13 ? "Libertadores" : "futebol";
+        const jogosBackup = await buscarJogosViaGoogle(nomeLiga);
+        jogos.push(...jogosBackup);
+      } else {
+        jogos.push(...jogosDoDia.map(j => ({ ...j, ligaId: liga })));
+      }
     }
 
     const jogosCompletos = await Promise.all(jogos.map(async (jogo) => {
+      if (jogo.fonte === "Robô Google") return jogo;
+
       const home = jogo.teams.home;
       const away = jogo.teams.away;
 
@@ -164,7 +208,8 @@ app.get("/ultimos-jogos", async (req, res) => {
         posicaoCasa,
         posicaoFora,
         ultimosJogosCasa: estatisticasHome.ultimosJogos,
-        ultimosJogosFora: estatisticasAway.ultimosJogos
+        ultimosJogosFora: estatisticasAway.ultimosJogos,
+        fonte: "API-Football"
       };
     }));
 
