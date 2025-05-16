@@ -31,27 +31,25 @@ const estatisticasZeradas = () => ({
 });
 
 const buscarEstatisticas = async (teamId) => {
-  const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?team=${teamId}&season=${temporada}&last=20`;
-  const response = await fetch(url, { headers });
-  const data = await response.json();
+  try {
+    const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?team=${teamId}&season=${temporada}&last=20`;
+    const response = await fetch(url, { headers });
+    const data = await response.json();
 
-  if (!data.response || !Array.isArray(data.response)) return estatisticasZeradas();
+    const jogosFinalizados = data.response
+      .filter(j => j.fixture.status.short === "FT")
+      .sort((a, b) => new Date(b.fixture.date) - new Date(a.fixture.date))
+      .slice(0, 5);
 
-  const jogosFinalizados = data.response
-    .filter(j => j.fixture.status.short === "FT")
-    .sort((a, b) => new Date(b.fixture.date) - new Date(a.fixture.date))
-    .slice(0, 5);
+    let mediaGolsFeitos = 0;
+    let mediaGolsSofridos = 0;
+    let mediaEscanteios = 0;
+    let mediaCartoes = 0;
+    let mediaChutesTotais = 0;
+    let mediaChutesGol = 0;
+    const ultimosJogos = [];
 
-  let mediaGolsFeitos = 0;
-  let mediaGolsSofridos = 0;
-  let mediaEscanteios = 0;
-  let mediaCartoes = 0;
-  let mediaChutesTotais = 0;
-  let mediaChutesGol = 0;
-  const ultimosJogos = [];
-
-  for (const jogo of jogosFinalizados) {
-    try {
+    for (const jogo of jogosFinalizados) {
       const isCasa = jogo.teams.home.id === teamId;
       const golsFeitos = isCasa ? jogo.goals.home : jogo.goals.away;
       const golsSofridos = isCasa ? jogo.goals.away : jogo.goals.home;
@@ -59,7 +57,12 @@ const buscarEstatisticas = async (teamId) => {
       const statsUrl = `https://api-football-v1.p.rapidapi.com/v3/fixtures/statistics?fixture=${jogo.fixture.id}`;
       const statsResponse = await fetch(statsUrl, { headers });
       const statsData = await statsResponse.json();
-      const stats = statsData?.response?.[0]?.statistics || [];
+      const statsEntry = statsData?.response?.find(r => r.team?.id === teamId);
+      const stats = statsEntry?.statistics || [];
+
+      if (!stats.length) {
+        console.log(`[AVISO] Stats vazias para o time ${teamId} - Fixture ${jogo.fixture.id}`);
+      }
 
       const getStat = (tipo) => stats.find(s => s.type === tipo)?.value ?? 0;
 
@@ -75,23 +78,25 @@ const buscarEstatisticas = async (teamId) => {
       const placar = `${jogo.goals.home}x${jogo.goals.away}`;
       const dataJogo = new Date(jogo.fixture.date).toLocaleDateString("pt-BR");
       const local = isCasa ? "(casa)" : "(fora)";
+
       ultimosJogos.push({ texto: `${dataJogo} — ${timeMandante} ${placar} ${timeVisitante} ${local}` });
-    } catch (err) {
-      console.log("Erro ao buscar estatísticas do jogo", jogo.fixture?.id, err.message);
     }
+
+    const total = jogosFinalizados.length || 1;
+
+    return {
+      mediaGolsFeitos: (mediaGolsFeitos / total).toFixed(2),
+      mediaGolsSofridos: (mediaGolsSofridos / total).toFixed(2),
+      mediaEscanteios: (mediaEscanteios / total).toFixed(2),
+      mediaCartoes: (mediaCartoes / total).toFixed(2),
+      mediaChutesTotais: (mediaChutesTotais / total).toFixed(2),
+      mediaChutesGol: (mediaChutesGol / total).toFixed(2),
+      ultimosJogos
+    };
+  } catch (err) {
+    console.error("Erro buscarEstatisticas:", err.message);
+    return estatisticasZeradas();
   }
-
-  const total = jogosFinalizados.length || 1;
-
-  return {
-    mediaGolsFeitos: (mediaGolsFeitos / total).toFixed(2),
-    mediaGolsSofridos: (mediaGolsSofridos / total).toFixed(2),
-    mediaEscanteios: (mediaEscanteios / total).toFixed(2),
-    mediaCartoes: (mediaCartoes / total).toFixed(2),
-    mediaChutesTotais: (mediaChutesTotais / total).toFixed(2),
-    mediaChutesGol: (mediaChutesGol / total).toFixed(2),
-    ultimosJogos
-  };
 };
 
 const buscarPosicaoTabela = async (ligaId, teamId) => {
@@ -188,10 +193,10 @@ app.get("/analise-ao-vivo", async (req, res) => {
       waitUntil: "domcontentloaded",
     });
 
-    await page.waitForSelector("div[data-attrid]", { timeout: 10000 });
+    await page.waitForSelector("div[jscontroller][data-attrid]", { timeout: 10000 });
 
     const dados = await page.evaluate(() => {
-      const container = document.querySelector("div[data-attrid]");
+      const container = document.querySelector("div[jscontroller][data-attrid]");
       const texto = container?.innerText || '';
 
       return {
