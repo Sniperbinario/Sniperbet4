@@ -20,16 +20,15 @@ const headers = {
 const ligas = [39, 140, 135, 78, 13];
 const temporada = new Date().getFullYear();
 
-const buscarEstatisticasJogo = async (fixtureId) => {
-  try {
-    const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures/statistics?fixture=${fixtureId}`;
-    const response = await fetch(url, { headers });
-    const data = await response.json();
-    return data.response || [];
-  } catch (err) {
-    return [];
-  }
-};
+const estatisticasZeradas = () => ({
+  mediaGolsFeitos: '0.00',
+  mediaGolsSofridos: '0.00',
+  mediaEscanteios: '0.00',
+  mediaCartoes: '0.00',
+  mediaChutesTotais: '0.00',
+  mediaChutesGol: '0.00',
+  ultimosJogos: []
+});
 
 const buscarEstatisticas = async (teamId) => {
   const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?team=${teamId}&season=${temporada}&last=20`;
@@ -52,27 +51,34 @@ const buscarEstatisticas = async (teamId) => {
   const ultimosJogos = [];
 
   for (const jogo of jogosFinalizados) {
-    const isCasa = jogo.teams.home.id === teamId;
-    const golsFeitos = isCasa ? jogo.goals.home : jogo.goals.away;
-    const golsSofridos = isCasa ? jogo.goals.away : jogo.goals.home;
+    try {
+      const isCasa = jogo.teams.home.id === teamId;
+      const golsFeitos = isCasa ? jogo.goals.home : jogo.goals.away;
+      const golsSofridos = isCasa ? jogo.goals.away : jogo.goals.home;
 
-    const statsDetalhadas = await buscarEstatisticasJogo(jogo.fixture.id);
-    const stats = statsDetalhadas?.[0]?.statistics || [];
-    const getStat = (type) => stats.find(s => s.type === type)?.value;
+      const statsUrl = `https://api-football-v1.p.rapidapi.com/v3/fixtures/statistics?fixture=${jogo.fixture.id}`;
+      const statsResponse = await fetch(statsUrl, { headers });
+      const statsData = await statsResponse.json();
+      const stats = statsData?.response?.[0]?.statistics || [];
 
-    mediaGolsFeitos += golsFeitos;
-    mediaGolsSofridos += golsSofridos;
-    mediaEscanteios += getStat("Corner Kicks") ?? 0;
-    mediaCartoes += getStat("Yellow Cards") ?? 0;
-    mediaChutesTotais += getStat("Total Shots") ?? 0;
-    mediaChutesGol += getStat("Shots on Goal") ?? 0;
+      const getStat = (tipo) => stats.find(s => s.type === tipo)?.value ?? 0;
 
-    const timeMandante = jogo.teams.home.name;
-    const timeVisitante = jogo.teams.away.name;
-    const placar = `${jogo.goals.home}x${jogo.goals.away}`;
-    const dataJogo = new Date(jogo.fixture.date).toLocaleDateString("pt-BR");
-    const local = isCasa ? "(casa)" : "(fora)";
-    ultimosJogos.push({ texto: `${dataJogo} — ${timeMandante} ${placar} ${timeVisitante} ${local}` });
+      mediaGolsFeitos += golsFeitos;
+      mediaGolsSofridos += golsSofridos;
+      mediaEscanteios += getStat("Corner Kicks");
+      mediaCartoes += getStat("Yellow Cards");
+      mediaChutesTotais += getStat("Total Shots");
+      mediaChutesGol += getStat("Shots on Goal");
+
+      const timeMandante = jogo.teams.home.name;
+      const timeVisitante = jogo.teams.away.name;
+      const placar = `${jogo.goals.home}x${jogo.goals.away}`;
+      const dataJogo = new Date(jogo.fixture.date).toLocaleDateString("pt-BR");
+      const local = isCasa ? "(casa)" : "(fora)";
+      ultimosJogos.push({ texto: `${dataJogo} — ${timeMandante} ${placar} ${timeVisitante} ${local}` });
+    } catch (err) {
+      console.log("Erro ao buscar estatísticas do jogo", jogo.fixture?.id, err.message);
+    }
   }
 
   const total = jogosFinalizados.length || 1;
@@ -87,16 +93,6 @@ const buscarEstatisticas = async (teamId) => {
     ultimosJogos
   };
 };
-
-const estatisticasZeradas = () => ({
-  mediaGolsFeitos: '0.00',
-  mediaGolsSofridos: '0.00',
-  mediaEscanteios: '0.00',
-  mediaCartoes: '0.00',
-  mediaChutesTotais: '0.00',
-  mediaChutesGol: '0.00',
-  ultimosJogos: []
-});
 
 const buscarPosicaoTabela = async (ligaId, teamId) => {
   try {
@@ -192,13 +188,12 @@ app.get("/analise-ao-vivo", async (req, res) => {
       waitUntil: "domcontentloaded",
     });
 
-    await page.waitForSelector("div[data-attrid='kc:/sports_competition:live_score_card']", { timeout: 10000 });
+    await page.waitForSelector("div[data-attrid]", { timeout: 10000 });
 
-    const estatisticas = await page.evaluate(() => {
-      const container = document.querySelector("div[data-attrid='kc:/sports_competition:live_score_card']");
-      if (!container) return { erro: "Painel ao vivo não encontrado" };
+    const dados = await page.evaluate(() => {
+      const container = document.querySelector("div[data-attrid]");
+      const texto = container?.innerText || '';
 
-      const texto = container.innerText;
       return {
         fonte: "Google",
         textoCompleto: texto,
@@ -211,8 +206,8 @@ app.get("/analise-ao-vivo", async (req, res) => {
     });
 
     await browser.close();
-    estatisticas.ultimaAtualizacao = new Date().toLocaleString("pt-BR");
-    res.json(estatisticas);
+    dados.ultimaAtualizacao = new Date().toLocaleString("pt-BR");
+    res.json(dados);
   } catch (erro) {
     res.status(500).json({ erro: "Erro ao buscar dados ao vivo", detalhe: erro.message });
   }
