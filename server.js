@@ -1,10 +1,9 @@
-// ======== server.js HÍBRIDO (API + Google Backup) ========
+// ======== server.js COMPLETO (Render + API + Robô Google) ========
 const express = require("express");
 const cors = require("cors");
 const fetch = require("node-fetch");
 const path = require("path");
-const chromium = require("chrome-aws-lambda");
-const puppeteer = require("puppeteer-core");
+const puppeteer = require("puppeteer");
 require("dotenv").config();
 
 const app = express();
@@ -21,15 +20,8 @@ const headers = {
 const ligas = [13, 71, 72, 39, 140, 135];
 const temporada = new Date().getFullYear();
 
-// Função de backup via Google (simples)
 async function buscarJogosViaGoogle(ligaNome) {
-  const browser = await puppeteer.launch({
-    args: chromium.args,
-    defaultViewport: chromium.defaultViewport,
-    executablePath: await chromium.executablePath,
-    headless: chromium.headless
-  });
-
+  const browser = await puppeteer.launch({ headless: true });
   const page = await browser.newPage();
   await page.goto(`https://www.google.com/search?q=${encodeURIComponent(ligaNome + ' jogos hoje')}`);
 
@@ -45,7 +37,6 @@ async function buscarJogosViaGoogle(ligaNome) {
 
   await browser.close();
 
-  // Transforma em estrutura de jogos fallback
   return jogos.map(nome => ({
     timeCasa: nome.split(" vs ")[0].trim(),
     timeFora: nome.split(" vs ")[1].trim(),
@@ -79,17 +70,9 @@ const buscarEstatisticas = async (teamId) => {
     const response = await fetch(url, { headers });
     const data = await response.json();
 
-    const jogosFinalizados = data.response
-      .filter(j => j.fixture.status.short === "FT")
-      .sort((a, b) => new Date(b.fixture.date) - new Date(a.fixture.date))
-      .slice(0, 5);
+    const jogosFinalizados = data.response.filter(j => j.fixture.status.short === "FT").slice(0, 5);
 
-    let mediaGolsFeitos = 0;
-    let mediaGolsSofridos = 0;
-    let mediaEscanteios = 0;
-    let mediaCartoes = 0;
-    let mediaChutesTotais = 0;
-    let mediaChutesGol = 0;
+    let mediaGolsFeitos = 0, mediaGolsSofridos = 0, mediaEscanteios = 0, mediaCartoes = 0, mediaChutesTotais = 0, mediaChutesGol = 0;
     const ultimosJogos = [];
 
     for (const jogo of jogosFinalizados) {
@@ -103,7 +86,7 @@ const buscarEstatisticas = async (teamId) => {
       const statsEntry = statsData?.response?.find(r => r.team?.id === teamId);
       const stats = statsEntry?.statistics || [];
 
-      const getStat = (tipo) => stats.find(s => s.type === tipo)?.value ?? 0;
+      const getStat = tipo => stats.find(s => s.type === tipo)?.value ?? 0;
 
       mediaGolsFeitos += golsFeitos;
       mediaGolsSofridos += golsSofridos;
@@ -112,16 +95,10 @@ const buscarEstatisticas = async (teamId) => {
       mediaChutesTotais += getStat("Total Shots");
       mediaChutesGol += getStat("Shots on Goal");
 
-      const dataJogo = new Date(jogo.fixture.date).toLocaleDateString("pt-BR");
-      const timeMandante = jogo.teams.home.name;
-      const timeVisitante = jogo.teams.away.name;
-      const placar = `${jogo.goals.home}x${jogo.goals.away}`;
-      const local = isCasa ? "(casa)" : "(fora)";
-      ultimosJogos.push({ texto: `${dataJogo} — ${timeMandante} ${placar} ${timeVisitante} ${local}` });
+      ultimosJogos.push({ texto: `${new Date(jogo.fixture.date).toLocaleDateString("pt-BR")} — ${jogo.teams.home.name} ${jogo.goals.home}x${jogo.goals.away} ${jogo.teams.away.name} ${isCasa ? "(casa)" : "(fora)"}` });
     }
 
     const total = jogosFinalizados.length || 1;
-
     return {
       mediaGolsFeitos: (mediaGolsFeitos / total).toFixed(2),
       mediaGolsSofridos: (mediaGolsSofridos / total).toFixed(2),
@@ -143,7 +120,7 @@ const buscarPosicaoTabela = async (ligaId, teamId) => {
     const response = await fetch(url, { headers });
     const data = await response.json();
     const tabela = data.response[0]?.league?.standings[0];
-    const timeInfo = tabela?.find((entry) => entry.team.id === teamId);
+    const timeInfo = tabela?.find(entry => entry.team.id === teamId);
     return timeInfo?.rank || "N/D";
   } catch {
     return "N/D";
@@ -154,7 +131,6 @@ app.get("/ultimos-jogos", async (req, res) => {
   try {
     const brasiliaDate = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
     const dataHojeBrasilia = brasiliaDate.toLocaleDateString("pt-BR");
-
     const jogos = [];
 
     for (const liga of ligas) {
@@ -169,7 +145,6 @@ app.get("/ultimos-jogos", async (req, res) => {
       });
 
       if (jogosDoDia.length === 0) {
-        console.log(`⚠️ Liga ${liga} vazia — puxando via robô...`);
         const nomeLiga = liga === 39 ? "Premier League" : liga === 13 ? "Libertadores" : "futebol";
         const jogosBackup = await buscarJogosViaGoogle(nomeLiga);
         jogos.push(...jogosBackup);
@@ -183,13 +158,10 @@ app.get("/ultimos-jogos", async (req, res) => {
 
       const home = jogo.teams.home;
       const away = jogo.teams.away;
-
       const estatisticasHome = await buscarEstatisticas(home.id);
       const estatisticasAway = await buscarEstatisticas(away.id);
-
       const posicaoCasa = await buscarPosicaoTabela(jogo.ligaId, home.id);
       const posicaoFora = await buscarPosicaoTabela(jogo.ligaId, away.id);
-
       const horarioBrasilia = new Date(jogo.fixture.date).toLocaleString("pt-BR", {
         timeZone: "America/Sao_Paulo",
         hour: "2-digit",
@@ -225,13 +197,7 @@ app.get("/analise-ao-vivo", async (req, res) => {
   if (!jogo) return res.status(400).json({ erro: "Parâmetro 'jogo' é obrigatório" });
 
   try {
-    const browser = await puppeteer.launch({
-      args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath,
-      headless: chromium.headless
-    });
-
+    const browser = await puppeteer.launch({ headless: true });
     const page = await browser.newPage();
     await page.goto(`https://www.google.com/search?q=${encodeURIComponent(jogo)}+ao+vivo`, {
       waitUntil: "domcontentloaded",
