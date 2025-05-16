@@ -61,7 +61,7 @@ const buscarEstatisticas = async (teamId) => {
       const stats = statsEntry?.statistics || [];
 
       if (!stats.length) {
-        console.log(`[AVISO] Stats vazias para o time ${teamId} - Fixture ${jogo.fixture.id}`);
+        console.log(`‼️ Sem estatísticas para ${teamId} - Fixture ${jogo.fixture.id}`);
       }
 
       const getStat = (tipo) => stats.find(s => s.type === tipo)?.value ?? 0;
@@ -193,7 +193,7 @@ app.get("/analise-ao-vivo", async (req, res) => {
       waitUntil: "domcontentloaded",
     });
 
-    await page.waitForSelector("div[jscontroller][data-attrid]", { timeout: 10000 });
+    await page.waitForSelector("div[jscontroller][data-attrid]", { timeout: 15000 });
 
     const dados = await page.evaluate(() => {
       const container = document.querySelector("div[jscontroller][data-attrid]");
