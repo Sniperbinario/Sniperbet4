@@ -109,16 +109,17 @@ const buscarPosicaoTabela = async (ligaId, teamId) => {
 
 app.get("/ultimos-jogos", async (req, res) => {
   try {
-    const brasiliaDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-    const hoje = brasiliaDate.toISOString().split('T')[0];
+    const brasiliaDate = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+    const hoje = brasiliaDate.toISOString().split("T")[0];
     const jogos = [];
 
     for (const liga of ligas) {
-      const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?league=${liga}&season=${temporada}&date=${hoje}`;
+      const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?league=${liga}&season=${temporada}`;
       const response = await fetch(url, { headers });
       const data = await response.json();
       if (!Array.isArray(data.response)) continue;
-      jogos.push(...data.response.map(j => ({ ...j, ligaId: liga })));
+      const jogosDoDia = data.response.filter(j => j.fixture.date.includes(hoje));
+      jogos.push(...jogosDoDia.map(j => ({ ...j, ligaId: liga })));
     }
 
     const jogosCompletos = await Promise.all(jogos.map(async (jogo) => {
