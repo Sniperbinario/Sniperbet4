@@ -5,11 +5,15 @@ const app = express();
 const PORT = process.env.PORT || 10000;
 
 app.use(cors());
-app.use(express.static("public")); // para servir o frontend (index.html)
+app.use(express.static("public"));
 
 const API_KEY = "284ce58fecmsha01014ea476b376p179fb2jsn714c3c6f02d8";
-const LEAGUE_IDS = [71, 72, 13, 140, 39, 135]; // Serie A, Serie B, Liberta, La Liga, Premier, ITA
+const API_HOST = "api-football-v1.p.rapidapi.com";
 
+// ⚠️ Teste só com 3 ligas por enquanto. Depois volta pra [71, 72, 13, 140, 39, 135]
+const LEAGUE_IDS = [71, 72, 13]; // Serie A, Serie B e Libertadores
+
+// Função para ajustar o horário para fuso de Brasília
 function ajustarHorarioBrasilia(dateStr) {
   const data = new Date(dateStr);
   data.setHours(data.getHours() - 3);
@@ -19,16 +23,21 @@ function ajustarHorarioBrasilia(dateStr) {
   });
 }
 
+// Rota principal que retorna os jogos do dia
 app.get("/games", async (req, res) => {
   try {
     const today = new Date().toISOString().split("T")[0];
+
+    const headers = {
+      "X-RapidAPI-Key": API_KEY,
+      "X-RapidAPI-Host": API_HOST,
+    };
+
+    // Promessas para cada liga
     const promises = LEAGUE_IDS.map((leagueId) =>
-      axios.get("https://api-football-v1.p.rapidapi.com/v3/fixtures", {
+      axios.get(`https://${API_HOST}/v3/fixtures`, {
         params: { league: leagueId, date: today },
-        headers: {
-          "X-RapidAPI-Key": API_KEY,
-          "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com",
-        },
+        headers,
       })
     );
 
@@ -49,13 +58,20 @@ app.get("/games", async (req, res) => {
       });
     });
 
+    if (jogos.length === 0) {
+      console.log("⚠️ Nenhum jogo encontrado hoje.");
+    } else {
+      console.log(`✅ ${jogos.length} jogos encontrados e enviados.`);
+    }
+
     res.json(jogos);
   } catch (error) {
-    console.error("Erro ao buscar jogos:", error.message);
+    console.error("❌ Erro ao buscar jogos:", error.response?.status, error.message);
     res.status(500).json({ erro: "Erro ao buscar jogos" });
   }
 });
 
+// Inicia o servidor
 app.listen(PORT, () => {
   console.log(`🔥 SniperBet rodando na porta ${PORT}`);
 });
