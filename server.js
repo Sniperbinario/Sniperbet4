@@ -1,4 +1,5 @@
-// ======== server.js COMPLETO (Render + Puppeteer AWS Lambda + Robô Google + API-Football) ========
+process.env.PUPPETEER_CACHE_DIR = './.cache/puppeteer';
+
 const express = require("express");
 const cors = require("cors");
 const fetch = require("node-fetch");
@@ -21,19 +22,18 @@ const headers = {
 const ligas = [13, 71, 72, 39, 140, 135];
 const temporada = new Date().getFullYear();
 
-async function criarBrowser() {
-  return await puppeteer.launch({
-    args: chromium.args,
-    executablePath: await chromium.executablePath,
-    headless: chromium.headless,
-    defaultViewport: chromium.defaultViewport,
-  });
-}
-
 async function buscarJogosViaGoogle(ligaNome) {
-  const browser = await criarBrowser();
+  const browser = await puppeteer.launch({
+    args: chromium.args,
+    defaultViewport: chromium.defaultViewport,
+    executablePath: await chromium.executablePath,
+    headless: chromium.headless
+  });
+
   const page = await browser.newPage();
-  await page.goto(`https://www.google.com/search?q=${encodeURIComponent(ligaNome + ' jogos hoje')}`);
+  await page.goto(`https://www.google.com/search?q=${encodeURIComponent(ligaNome + ' jogos hoje')}`, {
+    waitUntil: "domcontentloaded",
+  });
 
   const jogos = await page.evaluate(() => {
     const partidas = [];
@@ -79,8 +79,8 @@ const buscarEstatisticas = async (teamId) => {
     const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?team=${teamId}&season=${temporada}&last=20`;
     const response = await fetch(url, { headers });
     const data = await response.json();
-    const jogosFinalizados = data.response.filter(j => j.fixture.status.short === "FT").slice(0, 5);
 
+    const jogosFinalizados = data.response.filter(j => j.fixture.status.short === "FT").slice(0, 5);
     let mediaGolsFeitos = 0, mediaGolsSofridos = 0, mediaEscanteios = 0, mediaCartoes = 0, mediaChutesTotais = 0, mediaChutesGol = 0;
     const ultimosJogos = [];
 
@@ -103,7 +103,9 @@ const buscarEstatisticas = async (teamId) => {
       mediaChutesTotais += getStat("Total Shots");
       mediaChutesGol += getStat("Shots on Goal");
 
-      ultimosJogos.push({ texto: `${new Date(jogo.fixture.date).toLocaleDateString("pt-BR")} — ${jogo.teams.home.name} ${jogo.goals.home}x${jogo.goals.away} ${jogo.teams.away.name} ${isCasa ? "(casa)" : "(fora)"}` });
+      ultimosJogos.push({
+        texto: `${new Date(jogo.fixture.date).toLocaleDateString("pt-BR")} — ${jogo.teams.home.name} ${jogo.goals.home}x${jogo.goals.away} ${jogo.teams.away.name} ${isCasa ? "(casa)" : "(fora)"}`
+      });
     }
 
     const total = jogosFinalizados.length || 1;
@@ -198,38 +200,6 @@ app.get("/ultimos-jogos", async (req, res) => {
     console.error("Erro geral:", err);
     res.status(500).json({ erro: "Erro ao buscar jogos" });
   }
-});
-
-app.get("/analise-ao-vivo", async (req, res) => {
-  const jogo = req.query.jogo;
-  if (!jogo) return res.status(400).json({ erro: "Parâmetro 'jogo' é obrigatório" });
-
-  try {
-    const browser = await criarBrowser();
-    const page = await browser.newPage();
-    await page.goto(`https://www.google.com/search?q=${encodeURIComponent(jogo)}+ao+vivo`, {
-      waitUntil: "domcontentloaded",
-    });
-
-    await page.waitForSelector("div[data-attrid]", { timeout: 15000 });
-    const dados = await page.evaluate(() => {
-      const container = document.querySelector("div[data-attrid]");
-      const texto = container?.innerText || '';
-      return {
-        textoBruto: texto,
-        ultimaAtualizacao: new Date().toLocaleString("pt-BR")
-      };
-    });
-
-    await browser.close();
-    res.json(dados);
-  } catch (erro) {
-    res.status(500).json({ erro: "Erro ao buscar dados ao vivo", detalhe: erro.message });
-  }
-});
-
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
 });
 
 app.listen(port, () => {
