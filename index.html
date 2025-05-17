@@ -2,72 +2,9 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SniperBet - Estatísticas dos Jogos</title>
-  <style>
-    body {
-      background-color: #121212;
-      color: #eee;
-      font-family: Arial, sans-serif;
-      padding: 20px;
-    }
-    h1 {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    .box {
-      max-width: 800px;
-      margin: auto;
-    }
-    .jogo {
-      background: #1e1e1e;
-      padding: 15px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      box-shadow: 0 0 10px #000;
-    }
-    .time {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 12px;
-      margin: 10px 0;
-    }
-    button.ver-estatisticas,
-    button.ver-ao-vivo {
-      padding: 8px 16px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      margin: 4px 6px 0 0;
-    }
-    .ver-estatisticas {
-      background-color: #008CBA;
-      color: white;
-    }
-    .ver-ao-vivo {
-      background-color: #00bb33;
-      color: white;
-    }
-    .ao-vivo {
-      display: none;
-      margin-top: 10px;
-      background: #111;
-      padding: 10px;
-      border-radius: 8px;
-    }
-    .ultimos-jogos li {
-      padding: 4px 0;
-      border-bottom: 1px solid #333;
-      font-weight: bold;
-      color: #ccc;
-    }
-    .fonte-jogo {
-      font-size: 13px;
-      opacity: 0.6;
-      margin-top: 8px;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <h1>SniperBet - Estatísticas dos Jogos</h1>
@@ -75,87 +12,98 @@
 
   <script>
     async function carregarJogos() {
-      const res = await fetch("https://sniperbet4.onrender.com/ultimos-jogos");
-      const data = await res.json();
-      const container = document.getElementById("jogos");
-      container.innerHTML = "";
+      try {
+        const res = await fetch("/ultimos-jogos");
+        const data = await res.json();
+        const container = document.getElementById("jogos");
+        container.innerHTML = "";
 
-      data.jogos.forEach(jogo => {
-        const bloco = document.createElement("div");
-        bloco.className = "jogo";
+        data.jogos.forEach(jogo => {
+          const bloco = document.createElement("div");
+          bloco.className = "jogo";
 
-        const dataFormatada = jogo.data.split("T")[0].split("-").reverse().join("/");
+          const dataFormatada = jogo.data.split("T")[0].split("-").reverse().join("/");
 
-        bloco.innerHTML = `
-          <p><strong>${dataFormatada} ${jogo.horario}</strong></p>
-          <div class="time">
-            <img src="${jogo.logoCasa}" alt="${jogo.timeCasa}" width="30"/> ${jogo.timeCasa}
-            <span> x </span>
-            ${jogo.timeFora} <img src="${jogo.logoFora}" alt="${jogo.timeFora}" width="30"/>
-          </div>
-          <p class="fonte-jogo">📡 Fonte: ${jogo.fonte || 'API-Football'}</p>
-          <button class="ver-estatisticas">Ver estatísticas</button>
-          <button class="ver-ao-vivo">Ver análise ao vivo</button>
-          <div class="estatisticas" style="display:none">
-            <h4>${jogo.timeCasa}</h4>
-            <p>📌 Posição na tabela: ${jogo.posicaoCasa || 'N/D'}</p>
-            <p>📊 Média de Gols Feitos (últimos 5 jogos): ${jogo.estatisticasHome?.mediaGolsFeitos || 'N/D'}</p>
-            <p>📊 Média de Gols Sofridos (últimos 5 jogos): ${jogo.estatisticasHome?.mediaGolsSofridos || 'N/D'}</p>
-            <p>📊 Média de Escanteios (últimos 5 jogos): ${jogo.estatisticasHome?.mediaEscanteios || 'N/D'}</p>
-            <p>📊 Média de Cartões (últimos 5 jogos): ${jogo.estatisticasHome?.mediaCartoes || 'N/D'}</p>
-            <p>📊 Média de Chutes Totais (últimos 5 jogos): ${jogo.estatisticasHome?.mediaChutesTotais || 'N/D'}</p>
-            <p>📊 Média de Chutes a Gol (últimos 5 jogos): ${jogo.estatisticasHome?.mediaChutesGol || 'N/D'}</p>
-            <p>📊 Últimos 5 jogos:</p>
-            <ul class="ultimos-jogos">
-              ${(jogo.ultimosJogosCasa || []).map(j => `<li>${j.texto}</li>`).join("")}
-            </ul>
-            <hr>
-            <h4>${jogo.timeFora}</h4>
-            <p>📌 Posição na tabela: ${jogo.posicaoFora || 'N/D'}</p>
-            <p>📊 Média de Gols Feitos (últimos 5 jogos): ${jogo.estatisticasAway?.mediaGolsFeitos || 'N/D'}</p>
-            <p>📊 Média de Gols Sofridos (últimos 5 jogos): ${jogo.estatisticasAway?.mediaGolsSofridos || 'N/D'}</p>
-            <p>📊 Média de Escanteios (últimos 5 jogos): ${jogo.estatisticasAway?.mediaEscanteios || 'N/D'}</p>
-            <p>📊 Média de Cartões (últimos 5 jogos): ${jogo.estatisticasAway?.mediaCartoes || 'N/D'}</p>
-            <p>📊 Média de Chutes Totais (últimos 5 jogos): ${jogo.estatisticasAway?.mediaChutesTotais || 'N/D'}</p>
-            <p>📊 Média de Chutes a Gol (últimos 5 jogos): ${jogo.estatisticasAway?.mediaChutesGol || 'N/D'}</p>
-            <p>📊 Últimos 5 jogos:</p>
-            <ul class="ultimos-jogos">
-              ${(jogo.ultimosJogosFora || []).map(j => `<li>${j.texto}</li>`).join("")}
-            </ul>
-          </div>
-          <div class="ao-vivo"></div>
-        `;
+          bloco.innerHTML = `
+            <p><strong>${dataFormatada} ${jogo.horario}</strong></p>
+            <div class="time">
+              <img src="${jogo.logoCasa}" alt="${jogo.timeCasa}" width="30" />
+              ${jogo.timeCasa}
+              <span> x </span>
+              ${jogo.timeFora}
+              <img src="${jogo.logoFora}" alt="${jogo.timeFora}" width="30" />
+            </div>
 
-        bloco.querySelector(".ver-estatisticas").addEventListener("click", () => {
-          const stats = bloco.querySelector(".estatisticas");
-          stats.style.display = stats.style.display === "none" ? "block" : "none";
-        });
+            <button class="ver-estatisticas">Ver estatísticas</button>
+            <button class="ver-ao-vivo">Ver análise ao vivo</button>
 
-        bloco.querySelector(".ver-ao-vivo").addEventListener("click", async () => {
-          const aoVivoDiv = bloco.querySelector(".ao-vivo");
-          aoVivoDiv.innerHTML = "🔄 Buscando dados ao vivo...";
-          aoVivoDiv.style.display = "block";
+            <div class="estatisticas">
+              <h4>${jogo.timeCasa}</h4>
+              <p>📌 Posição na tabela: ${jogo.posicaoCasa || 'N/D'}</p>
+              <p>📊 Média de Gols Feitos (últimos 5 jogos): ${jogo.estatisticasHome.mediaGolsFeitos}</p>
+              <p>📊 Média de Gols Sofridos (últimos 5 jogos): ${jogo.estatisticasHome.mediaGolsSofridos}</p>
+              <p>📊 Média de Escanteios (últimos 5 jogos): ${jogo.estatisticasHome.mediaEscanteios}</p>
+              <p>📊 Média de Cartões (últimos 5 jogos): ${jogo.estatisticasHome.mediaCartoes}</p>
+              <p>📊 Média de Chutes Totais (últimos 5 jogos): ${jogo.estatisticasHome.mediaChutesTotais}</p>
+              <p>📊 Média de Chutes a Gol (últimos 5 jogos): ${jogo.estatisticasHome.mediaChutesGol}</p>
+              <p>📊 Últimos 5 jogos:</p>
+              <ul class="ultimos-jogos">
+                ${jogo.ultimosJogosCasa.map(j => `<li>${j.texto}</li>`).join("")}
+              </ul>
 
-          try {
-            const response = await fetch(`https://sniperbet4.onrender.com/analise-ao-vivo?jogo=${jogo.timeCasa} x ${jogo.timeFora}`);
-            const dados = await response.json();
+              <hr />
 
-            if (dados.erro) {
-              aoVivoDiv.innerHTML = `<p style="color:red;">Erro: ${dados.erro}</p>`;
-            } else {
-              aoVivoDiv.innerHTML = `
-                <h4>📡 Análise ao Vivo</h4>
-                <pre style="white-space: pre-wrap;">${dados.textoBruto}</pre>
-                <p style="font-size: 12px; opacity: 0.6;">⏱ Atualizado: ${dados.ultimaAtualizacao}</p>
-              `;
+              <h4>${jogo.timeFora}</h4>
+              <p>📌 Posição na tabela: ${jogo.posicaoFora || 'N/D'}</p>
+              <p>📊 Média de Gols Feitos (últimos 5 jogos): ${jogo.estatisticasAway.mediaGolsFeitos}</p>
+              <p>📊 Média de Gols Sofridos (últimos 5 jogos): ${jogo.estatisticasAway.mediaGolsSofridos}</p>
+              <p>📊 Média de Escanteios (últimos 5 jogos): ${jogo.estatisticasAway.mediaEscanteios}</p>
+              <p>📊 Média de Cartões (últimos 5 jogos): ${jogo.estatisticasAway.mediaCartoes}</p>
+              <p>📊 Média de Chutes Totais (últimos 5 jogos): ${jogo.estatisticasAway.mediaChutesTotais}</p>
+              <p>📊 Média de Chutes a Gol (últimos 5 jogos): ${jogo.estatisticasAway.mediaChutesGol}</p>
+              <p>📊 Últimos 5 jogos:</p>
+              <ul class="ultimos-jogos">
+                ${jogo.ultimosJogosFora.map(j => `<li>${j.texto}</li>`).join("")}
+              </ul>
+            </div>
+
+            <div class="ao-vivo">🔄 Análise ao vivo aqui...</div>
+          `;
+
+          bloco.querySelector(".ver-estatisticas").addEventListener("click", () => {
+            const stats = bloco.querySelector(".estatisticas");
+            stats.style.display = stats.style.display === "none" ? "block" : "none";
+          });
+
+          bloco.querySelector(".ver-ao-vivo").addEventListener("click", async () => {
+            const aoVivoDiv = bloco.querySelector(".ao-vivo");
+            aoVivoDiv.innerHTML = "🔄 Buscando dados ao vivo...";
+            aoVivoDiv.style.display = "block";
+
+            try {
+              const response = await fetch(`/analise-ao-vivo?jogo=${jogo.timeCasa} x ${jogo.timeFora}`);
+              const dados = await response.json();
+
+              if (dados.erro) {
+                aoVivoDiv.innerHTML = `<p style="color:red;">Erro: ${dados.erro}</p>`;
+              } else {
+                aoVivoDiv.innerHTML = `
+                  <h4>📡 Análise ao Vivo</h4>
+                  <pre>${dados.textoBruto}</pre>
+                  <p style="font-size: 12px; opacity: 0.6;">⏱ Atualizado: ${dados.ultimaAtualizacao}</p>
+                `;
+              }
+            } catch (err) {
+              aoVivoDiv.innerHTML = `<p style="color:red;">Erro ao buscar dados ao vivo.</p>`;
             }
-          } catch (err) {
-            aoVivoDiv.innerHTML = `<p style="color:red;">Erro ao buscar dados ao vivo.</p>`;
-          }
-        });
+          });
 
-        container.appendChild(bloco);
-      });
+          container.appendChild(bloco);
+        });
+      } catch (error) {
+        document.getElementById("jogos").innerHTML = `<p style="color:red;">Erro ao carregar jogos.</p>`;
+        console.error(error);
+      }
     }
 
     carregarJogos();
