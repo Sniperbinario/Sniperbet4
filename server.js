@@ -1,8 +1,10 @@
+// ======== server.js COMPLETO (Render + Puppeteer AWS Lambda + Robô Google + API-Football) ========
 const express = require("express");
 const cors = require("cors");
 const fetch = require("node-fetch");
 const path = require("path");
-const puppeteer = require("puppeteer");
+const chromium = require("chrome-aws-lambda");
+const puppeteer = require("puppeteer-core");
 require("dotenv").config();
 
 const app = express();
@@ -16,16 +18,20 @@ const headers = {
   "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com",
 };
 
-const ligas = [13, 71, 72, 39, 140, 135]; // Libertadores, Série A, B, Premier, La Liga, Serie A ITA
+const ligas = [13, 71, 72, 39, 140, 135];
 const temporada = new Date().getFullYear();
 
-// Robô Google para backup de jogos
-async function buscarJogosViaGoogle(ligaNome) {
-  const browser = await puppeteer.launch({
-    headless: "new",
-    args: ["--no-sandbox", "--disable-setuid-sandbox"]
+async function criarBrowser() {
+  return await puppeteer.launch({
+    args: chromium.args,
+    executablePath: await chromium.executablePath,
+    headless: chromium.headless,
+    defaultViewport: chromium.defaultViewport,
   });
+}
 
+async function buscarJogosViaGoogle(ligaNome) {
+  const browser = await criarBrowser();
   const page = await browser.newPage();
   await page.goto(`https://www.google.com/search?q=${encodeURIComponent(ligaNome + ' jogos hoje')}`);
 
@@ -73,8 +79,8 @@ const buscarEstatisticas = async (teamId) => {
     const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?team=${teamId}&season=${temporada}&last=20`;
     const response = await fetch(url, { headers });
     const data = await response.json();
-
     const jogosFinalizados = data.response.filter(j => j.fixture.status.short === "FT").slice(0, 5);
+
     let mediaGolsFeitos = 0, mediaGolsSofridos = 0, mediaEscanteios = 0, mediaCartoes = 0, mediaChutesTotais = 0, mediaChutesGol = 0;
     const ultimosJogos = [];
 
@@ -97,9 +103,7 @@ const buscarEstatisticas = async (teamId) => {
       mediaChutesTotais += getStat("Total Shots");
       mediaChutesGol += getStat("Shots on Goal");
 
-      ultimosJogos.push({
-        texto: `${new Date(jogo.fixture.date).toLocaleDateString("pt-BR")} — ${jogo.teams.home.name} ${jogo.goals.home}x${jogo.goals.away} ${jogo.teams.away.name} ${isCasa ? "(casa)" : "(fora)"}`
-      });
+      ultimosJogos.push({ texto: `${new Date(jogo.fixture.date).toLocaleDateString("pt-BR")} — ${jogo.teams.home.name} ${jogo.goals.home}x${jogo.goals.away} ${jogo.teams.away.name} ${isCasa ? "(casa)" : "(fora)"}` });
     }
 
     const total = jogosFinalizados.length || 1;
@@ -201,10 +205,7 @@ app.get("/analise-ao-vivo", async (req, res) => {
   if (!jogo) return res.status(400).json({ erro: "Parâmetro 'jogo' é obrigatório" });
 
   try {
-    const browser = await puppeteer.launch({
-      headless: "new",
-      args: ["--no-sandbox", "--disable-setuid-sandbox"]
-    });
+    const browser = await criarBrowser();
     const page = await browser.newPage();
     await page.goto(`https://www.google.com/search?q=${encodeURIComponent(jogo)}+ao+vivo`, {
       waitUntil: "domcontentloaded",
