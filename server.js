@@ -14,7 +14,7 @@ const headers = {
   "X-RapidAPI-Host": API_HOST,
 };
 
-const LEAGUE_IDS = [71, 72, 13];
+const LEAGUE_IDS = [71, 72, 13]; // Serie A, Serie B, Libertadores
 
 function ajustarHorarioBrasilia(dateStr) {
   const data = new Date(dateStr);
@@ -25,16 +25,30 @@ function ajustarHorarioBrasilia(dateStr) {
   });
 }
 
+function formatDate(date) {
+  return date.toISOString().split("T")[0];
+}
+
 app.get("/games", async (req, res) => {
   try {
-    const today = new Date().toISOString().split("T")[0];
+    const hoje = new Date();
+    const ontem = new Date();
+    ontem.setDate(hoje.getDate() - 1);
 
-    const promises = LEAGUE_IDS.map((leagueId) =>
-      axios.get(`https://${API_HOST}/v3/fixtures`, {
-        params: { league: leagueId, date: today },
-        headers,
-      })
-    );
+    const datas = [formatDate(hoje), formatDate(ontem)];
+
+    const promises = [];
+
+    datas.forEach(data => {
+      LEAGUE_IDS.forEach(leagueId => {
+        promises.push(
+          axios.get(`https://${API_HOST}/v3/fixtures`, {
+            params: { league: leagueId, date: data },
+            headers,
+          })
+        );
+      });
+    });
 
     const results = await Promise.all(promises);
     const jogos = [];
@@ -53,18 +67,24 @@ app.get("/games", async (req, res) => {
       });
     });
 
+    if (jogos.length === 0) {
+      console.log("⚠️ Nenhum jogo encontrado hoje ou ontem.");
+    } else {
+      console.log(`✅ ${jogos.length} jogos encontrados.`);
+    }
+
     res.json(jogos);
   } catch (error) {
-    console.error("Erro ao buscar jogos:", error.message);
+    console.error("❌ Erro ao buscar jogos:", error.message);
     res.status(500).json({ erro: "Erro ao buscar jogos" });
   }
 });
 
+// --- ROTA DE ANÁLISE (PASSO 2) ---
 app.get("/analisar/:fixtureId", async (req, res) => {
   try {
     const fixtureId = req.params.fixtureId;
 
-    // Buscar info do jogo
     const fixtureRes = await axios.get(`https://${API_HOST}/v3/fixtures`, {
       params: { id: fixtureId },
       headers,
@@ -90,18 +110,22 @@ app.get("/analisar/:fixtureId", async (req, res) => {
         chutesTotais: 0,
       };
 
-      jogos.forEach((j) => {
-        const stats = j.statistics?.find((s) => s.team.id === timeId)?.statistics || [];
+      for (let j of jogos) {
+        const statsRes = await axios.get(`https://${API_HOST}/v3/fixtures/statistics`, {
+          params: { fixture: j.fixture.id },
+          headers,
+        });
+
+        const stats = statsRes.data.response.find(s => s.team.id === timeId)?.statistics || [];
 
         total.golsFeitos += j.goals.for;
         total.golsSofridos += j.goals.against;
-
-        total.escanteios += stats.find((s) => s.type === "Corner Kicks")?.value || 0;
-        total.cartoes += (stats.find((s) => s.type === "Yellow Cards")?.value || 0)
-                       + (stats.find((s) => s.type === "Red Cards")?.value || 0);
-        total.chutesGol += stats.find((s) => s.type === "Shots on Goal")?.value || 0;
-        total.chutesTotais += stats.find((s) => s.type === "Total Shots")?.value || 0;
-      });
+        total.escanteios += stats.find(s => s.type === "Corner Kicks")?.value || 0;
+        total.cartoes += (stats.find(s => s.type === "Yellow Cards")?.value || 0)
+                       + (stats.find(s => s.type === "Red Cards")?.value || 0);
+        total.chutesGol += stats.find(s => s.type === "Shots on Goal")?.value || 0;
+        total.chutesTotais += stats.find(s => s.type === "Total Shots")?.value || 0;
+      }
 
       const dividir = jogos.length || 1;
 
