@@ -1,108 +1,12 @@
 body {
-  background-color: #121212;
-  color: #eee;
+  background-color: #111;
+  color: #fff;
   font-family: Arial, sans-serif;
+  text-align: center;
   padding: 20px;
-  margin: 0;
 }
 
 h1 {
-  text-align: center;
-  margin-bottom: 30px;
-  font-size: 28px;
-  color: #00bbff;
+  font-size: 2em;
+  margin-bottom: 20px;
 }
-
-.box {
-  max-width: 900px;
-  margin: auto;
-}
-
-.jogo {
-  background: #1e1e1e;
-  padding: 20px;
-  border-radius: 10px;
-  margin-bottom: 25px;
-  box-shadow: 0 0 12px rgba(0, 0, 0, 0.6);
-  transition: all 0.3s ease-in-out;
-}
-
-.jogo:hover {
-  transform: scale(1.02);
-}
-
-.time {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 12px;
-  font-size: 18px;
-  font-weight: bold;
-  margin: 12px 0;
-}
-
-button {
-  padding: 8px 16px;
-  background-color: #0066ff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  margin: 8px 8px 0 0;
-  font-weight: bold;
-  transition: background 0.2s ease-in-out;
-}
-
-button:hover {
-  background-color: #0050d1;
-}
-
-button.ver-ao-vivo {
-  background-color: #00bb33;
-}
-
-button.ver-ao-vivo:hover {
-  background-color: #01932a;
-}
-
-.estatisticas {
-  background: #171717;
-  padding: 14px;
-  border-radius: 8px;
-  margin-top: 12px;
-  display: none;
-}
-
-.estatisticas h4 {
-  color: #00d8ff;
-  margin-top: 8px;
-}
-
-.estatisticas p {
-  margin: 4px 0;
-  font-size: 15px;
-}
-
-.ultimos-jogos {
-  list-style: none;
-  padding-left: 0;
-  margin: 8px 0;
-}
-
-.ultimos-jogos li {
-  padding: 4px 0;
-  border-bottom: 1px solid #333;
-  color: #ccc;
-  font-weight: bold;
-  font-size: 14px;
-}
-
-.ao-vivo {
-  background-color: #222;
-  padding: 12px;
-  border-radius: 8px;
-  margin-top: 10px;
-  font-size: 14px;
-  color: #00ff99;
-  display: none;
-  white-space:
