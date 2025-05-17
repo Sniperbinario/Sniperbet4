@@ -1,4 +1,3 @@
-// ===== server.js =====
 process.env.PUPPETEER_CACHE_DIR = './.cache/puppeteer';
 
 const express = require("express");
@@ -11,8 +10,9 @@ require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 10000;
 
+// 👉 Corrigido para servir arquivos da pasta "public"
 app.use(cors());
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(path.join(__dirname, 'public')));
 
 const headers = {
   "X-RapidAPI-Key": process.env.API_KEY_FOOTBALL,
@@ -26,6 +26,7 @@ async function buscarJogosViaGoogle(ligaNome) {
   const browser = await puppeteer.launch({ headless: "new", args: ["--no-sandbox", "--disable-setuid-sandbox"] });
   const page = await browser.newPage();
   await page.goto(`https://www.google.com/search?q=${encodeURIComponent(ligaNome + ' jogos hoje')}`);
+
   const jogos = await page.evaluate(() => {
     const partidas = [];
     const elementos = document.querySelectorAll("div.imso_gs__tli");
@@ -35,7 +36,9 @@ async function buscarJogosViaGoogle(ligaNome) {
     });
     return partidas;
   });
+
   await browser.close();
+
   return jogos.map(nome => ({
     timeCasa: nome.split(" vs ")[0].trim(),
     timeFora: nome.split(" vs ")[1].trim(),
@@ -53,7 +56,15 @@ async function buscarJogosViaGoogle(ligaNome) {
   }));
 }
 
-const estatisticasZeradas = () => ({ mediaGolsFeitos: '0.00', mediaGolsSofridos: '0.00', mediaEscanteios: '0.00', mediaCartoes: '0.00', mediaChutesTotais: '0.00', mediaChutesGol: '0.00', ultimosJogos: [] });
+const estatisticasZeradas = () => ({
+  mediaGolsFeitos: '0.00',
+  mediaGolsSofridos: '0.00',
+  mediaEscanteios: '0.00',
+  mediaCartoes: '0.00',
+  mediaChutesTotais: '0.00',
+  mediaChutesGol: '0.00',
+  ultimosJogos: []
+});
 
 const buscarEstatisticas = async (teamId) => {
   try {
@@ -61,6 +72,7 @@ const buscarEstatisticas = async (teamId) => {
     const response = await fetch(url, { headers });
     const data = await response.json();
     const jogosFinalizados = data.response.filter(j => j.fixture.status.short === "FT").slice(0, 5);
+
     let mediaGolsFeitos = 0, mediaGolsSofridos = 0, mediaEscanteios = 0, mediaCartoes = 0, mediaChutesTotais = 0, mediaChutesGol = 0;
     const ultimosJogos = [];
 
@@ -149,7 +161,11 @@ app.get("/ultimos-jogos", async (req, res) => {
       const estatisticasAway = await buscarEstatisticas(away.id);
       const posicaoCasa = await buscarPosicaoTabela(jogo.ligaId, home.id);
       const posicaoFora = await buscarPosicaoTabela(jogo.ligaId, away.id);
-      const horarioBrasilia = new Date(jogo.fixture.date).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
+      const horarioBrasilia = new Date(jogo.fixture.date).toLocaleString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
 
       return {
         data: jogo.fixture.date,
@@ -183,6 +199,7 @@ app.get("/analise-ao-vivo", async (req, res) => {
     const browser = await puppeteer.launch({ headless: "new", args: ["--no-sandbox", "--disable-setuid-sandbox"] });
     const page = await browser.newPage();
     await page.goto(`https://www.google.com/search?q=${encodeURIComponent(jogo)}+ao+vivo`, { waitUntil: "domcontentloaded" });
+
     await page.waitForSelector("div[data-attrid]", { timeout: 15000 });
     const dados = await page.evaluate(() => {
       const container = document.querySelector("div[data-attrid]");
@@ -192,6 +209,7 @@ app.get("/analise-ao-vivo", async (req, res) => {
         ultimaAtualizacao: new Date().toLocaleString("pt-BR")
       };
     });
+
     await browser.close();
     res.json(dados);
   } catch (erro) {
@@ -199,8 +217,9 @@ app.get("/analise-ao-vivo", async (req, res) => {
   }
 });
 
+// 👇 Corrigido para enviar o index da pasta public
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 app.listen(port, () => {
