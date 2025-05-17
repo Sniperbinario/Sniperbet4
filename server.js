@@ -1,4 +1,6 @@
-// ======== server.js COMPLETO (Render + API + Robô Google) ========
+// ======== server.js COMPLETO (Render + Robô Google + Correções) ========
+process.env.PUPPETEER_CACHE_DIR = './.cache/puppeteer';
+
 const express = require("express");
 const cors = require("cors");
 const fetch = require("node-fetch");
@@ -21,7 +23,10 @@ const ligas = [13, 71, 72, 39, 140, 135];
 const temporada = new Date().getFullYear();
 
 async function buscarJogosViaGoogle(ligaNome) {
-  const browser = await puppeteer.launch({ headless: true });
+  const browser = await puppeteer.launch({
+    headless: "new",
+    args: ["--no-sandbox", "--disable-setuid-sandbox"]
+  });
   const page = await browser.newPage();
   await page.goto(`https://www.google.com/search?q=${encodeURIComponent(ligaNome + ' jogos hoje')}`);
 
@@ -71,7 +76,6 @@ const buscarEstatisticas = async (teamId) => {
     const data = await response.json();
 
     const jogosFinalizados = data.response.filter(j => j.fixture.status.short === "FT").slice(0, 5);
-
     let mediaGolsFeitos = 0, mediaGolsSofridos = 0, mediaEscanteios = 0, mediaCartoes = 0, mediaChutesTotais = 0, mediaChutesGol = 0;
     const ultimosJogos = [];
 
@@ -87,7 +91,6 @@ const buscarEstatisticas = async (teamId) => {
       const stats = statsEntry?.statistics || [];
 
       const getStat = tipo => stats.find(s => s.type === tipo)?.value ?? 0;
-
       mediaGolsFeitos += golsFeitos;
       mediaGolsSofridos += golsSofridos;
       mediaEscanteios += getStat("Corner Kicks");
@@ -197,7 +200,7 @@ app.get("/analise-ao-vivo", async (req, res) => {
   if (!jogo) return res.status(400).json({ erro: "Parâmetro 'jogo' é obrigatório" });
 
   try {
-    const browser = await puppeteer.launch({ headless: true });
+    const browser = await puppeteer.launch({ headless: "new", args: ["--no-sandbox", "--disable-setuid-sandbox"] });
     const page = await browser.newPage();
     await page.goto(`https://www.google.com/search?q=${encodeURIComponent(jogo)}+ao+vivo`, {
       waitUntil: "domcontentloaded",
