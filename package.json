@@ -1,7 +1,6 @@
 {
   "name": "sniperbet4",
   "version": "1.0.0",
-  "description": "SniperBet - Lista de jogos do dia",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
