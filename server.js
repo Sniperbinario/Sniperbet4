@@ -1,4 +1,3 @@
-// === server.js ===
 process.env.PUPPETEER_CACHE_DIR = './.cache/puppeteer';
 
 const express = require("express");
@@ -11,7 +10,6 @@ require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 10000;
 
-// Servir arquivos estáticos da raiz do projeto
 app.use(cors());
 app.use(express.static(__dirname));
 
@@ -23,7 +21,6 @@ const headers = {
 const ligas = [13, 71, 72, 39, 140, 135];
 const temporada = new Date().getFullYear();
 
-// Função para buscar jogos via Google (robô)
 async function buscarJogosViaGoogle(ligaNome) {
   const browser = await puppeteer.launch({ headless: "new", args: ["--no-sandbox", "--disable-setuid-sandbox"] });
   const page = await browser.newPage();
@@ -58,7 +55,6 @@ async function buscarJogosViaGoogle(ligaNome) {
   }));
 }
 
-// Retorna estatísticas zeradas
 const estatisticasZeradas = () => ({
   mediaGolsFeitos: '0.00',
   mediaGolsSofridos: '0.00',
@@ -69,7 +65,6 @@ const estatisticasZeradas = () => ({
   ultimosJogos: []
 });
 
-// Busca estatísticas por time
 const buscarEstatisticas = async (teamId) => {
   try {
     const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?team=${teamId}&season=${temporada}&last=20`;
@@ -131,7 +126,6 @@ const buscarPosicaoTabela = async (ligaId, teamId) => {
   }
 };
 
-// Endpoint jogos
 app.get("/ultimos-jogos", async (req, res) => {
   try {
     const brasiliaDate = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
@@ -166,62 +160,15 @@ app.get("/ultimos-jogos", async (req, res) => {
       const estatisticasAway = await buscarEstatisticas(away.id);
       const posicaoCasa = await buscarPosicaoTabela(jogo.ligaId, home.id);
       const posicaoFora = await buscarPosicaoTabela(jogo.ligaId, away.id);
-      const horarioBrasilia = new Date(jogo.fixture.date).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
+      const horarioBrasilia = new Date(jogo.fixture.date).toLocaleString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
 
       return {
         data: jogo.fixture.date,
         horario: horarioBrasilia,
         timeCasa: home.name,
         timeFora: away.name,
-        logoCasa: home.logo,
-        logoFora: away.logo,
-        estatisticasHome,
-        estatisticasAway,
-        posicaoCasa,
-        posicaoFora,
-        ultimosJogosCasa: estatisticasHome.ultimosJogos,
-        ultimosJogosFora: estatisticasAway.ultimosJogos,
-        fonte: "API-Football"
-      };
-    }));
-
-    res.json({ jogos: jogosCompletos });
-  } catch (err) {
-    console.error("Erro geral:", err);
-    res.status(500).json({ erro: "Erro ao buscar jogos" });
-  }
-});
-
-app.get("/analise-ao-vivo", async (req, res) => {
-  const jogo = req.query.jogo;
-  if (!jogo) return res.status(400).json({ erro: "Parâmetro 'jogo' é obrigatório" });
-
-  try {
-    const browser = await puppeteer.launch({ headless: "new", args: ["--no-sandbox", "--disable-setuid-sandbox"] });
-    const page = await browser.newPage();
-    await page.goto(`https://www.google.com/search?q=${encodeURIComponent(jogo)}+ao+vivo`, { waitUntil: "domcontentloaded" });
-
-    await page.waitForSelector("div[data-attrid]", { timeout: 15000 });
-    const dados = await page.evaluate(() => {
-      const container = document.querySelector("div[data-attrid]");
-      const texto = container?.innerText || '';
-      return {
-        textoBruto: texto,
-        ultimaAtualizacao: new Date().toLocaleString("pt-BR")
-      };
-    });
-
-    await browser.close();
-    res.json(dados);
-  } catch (erro) {
-    res.status(500).json({ erro: "Erro ao buscar dados ao vivo", detalhe: erro.message });
-  }
-});
-
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
-});
-
-app.listen(port, () => {
-  console.log(`🔥 SniperBet rodando na porta ${port}`);
-});
+        logoCasa:
