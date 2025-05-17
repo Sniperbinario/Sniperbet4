@@ -9,11 +9,13 @@ app.use(express.static("public"));
 
 const API_KEY = "284ce58fecmsha01014ea476b376p179fb2jsn714c3c6f02d8";
 const API_HOST = "api-football-v1.p.rapidapi.com";
+const headers = {
+  "X-RapidAPI-Key": API_KEY,
+  "X-RapidAPI-Host": API_HOST,
+};
 
-// ⚠️ Teste só com 3 ligas por enquanto. Depois volta pra [71, 72, 13, 140, 39, 135]
-const LEAGUE_IDS = [71, 72, 13]; // Serie A, Serie B e Libertadores
+const LEAGUE_IDS = [71, 72, 13];
 
-// Função para ajustar o horário para fuso de Brasília
 function ajustarHorarioBrasilia(dateStr) {
   const data = new Date(dateStr);
   data.setHours(data.getHours() - 3);
@@ -23,17 +25,10 @@ function ajustarHorarioBrasilia(dateStr) {
   });
 }
 
-// Rota principal que retorna os jogos do dia
 app.get("/games", async (req, res) => {
   try {
     const today = new Date().toISOString().split("T")[0];
 
-    const headers = {
-      "X-RapidAPI-Key": API_KEY,
-      "X-RapidAPI-Host": API_HOST,
-    };
-
-    // Promessas para cada liga
     const promises = LEAGUE_IDS.map((leagueId) =>
       axios.get(`https://${API_HOST}/v3/fixtures`, {
         params: { league: leagueId, date: today },
@@ -58,20 +53,85 @@ app.get("/games", async (req, res) => {
       });
     });
 
-    if (jogos.length === 0) {
-      console.log("⚠️ Nenhum jogo encontrado hoje.");
-    } else {
-      console.log(`✅ ${jogos.length} jogos encontrados e enviados.`);
-    }
-
     res.json(jogos);
   } catch (error) {
-    console.error("❌ Erro ao buscar jogos:", error.response?.status, error.message);
+    console.error("Erro ao buscar jogos:", error.message);
     res.status(500).json({ erro: "Erro ao buscar jogos" });
   }
 });
 
-// Inicia o servidor
+app.get("/analisar/:fixtureId", async (req, res) => {
+  try {
+    const fixtureId = req.params.fixtureId;
+
+    // Buscar info do jogo
+    const fixtureRes = await axios.get(`https://${API_HOST}/v3/fixtures`, {
+      params: { id: fixtureId },
+      headers,
+    });
+    const fixture = fixtureRes.data.response[0];
+    const homeId = fixture.teams.home.id;
+    const awayId = fixture.teams.away.id;
+
+    async function buscarEstatisticas(timeId) {
+      const jogosRes = await axios.get(`https://${API_HOST}/v3/fixtures`, {
+        params: { team: timeId, last: 5 },
+        headers,
+      });
+
+      const jogos = jogosRes.data.response;
+
+      let total = {
+        golsFeitos: 0,
+        golsSofridos: 0,
+        escanteios: 0,
+        cartoes: 0,
+        chutesGol: 0,
+        chutesTotais: 0,
+      };
+
+      jogos.forEach((j) => {
+        const stats = j.statistics?.find((s) => s.team.id === timeId)?.statistics || [];
+
+        total.golsFeitos += j.goals.for;
+        total.golsSofridos += j.goals.against;
+
+        total.escanteios += stats.find((s) => s.type === "Corner Kicks")?.value || 0;
+        total.cartoes += (stats.find((s) => s.type === "Yellow Cards")?.value || 0)
+                       + (stats.find((s) => s.type === "Red Cards")?.value || 0);
+        total.chutesGol += stats.find((s) => s.type === "Shots on Goal")?.value || 0;
+        total.chutesTotais += stats.find((s) => s.type === "Total Shots")?.value || 0;
+      });
+
+      const dividir = jogos.length || 1;
+
+      return {
+        mediaGolsFeitos: (total.golsFeitos / dividir).toFixed(1),
+        mediaGolsSofridos: (total.golsSofridos / dividir).toFixed(1),
+        mediaEscanteios: (total.escanteios / dividir).toFixed(1),
+        mediaCartoes: (total.cartoes / dividir).toFixed(1),
+        mediaChutesGol: (total.chutesGol / dividir).toFixed(1),
+        mediaChutesTotais: (total.chutesTotais / dividir).toFixed(1),
+      };
+    }
+
+    const homeStats = await buscarEstatisticas(homeId);
+    const awayStats = await buscarEstatisticas(awayId);
+
+    res.json({
+      timeCasa: fixture.teams.home.name,
+      timeFora: fixture.teams.away.name,
+      estatisticas: {
+        casa: homeStats,
+        fora: awayStats,
+      },
+    });
+  } catch (error) {
+    console.error("Erro na análise:", error.message);
+    res.status(500).json({ erro: "Erro ao analisar fixture" });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`🔥 SniperBet rodando na porta ${PORT}`);
 });
