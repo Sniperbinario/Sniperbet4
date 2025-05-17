@@ -2,11 +2,10 @@ body {
   background-color: #111;
   color: #fff;
   font-family: Arial, sans-serif;
-  text-align: center;
   padding: 20px;
+  text-align: center;
 }
 
 h1 {
-  font-size: 2em;
-  margin-bottom: 20px;
+  color: #21f321;
 }
