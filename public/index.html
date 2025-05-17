@@ -66,53 +66,91 @@
 
   <script>
     async function carregarJogos() {
-      const res = await fetch("/games");
-      const jogos = await res.json();
-      const lista = document.getElementById("lista-jogos");
-      lista.innerHTML = "";
+      try {
+        const res = await fetch("/games");
+        const jogos = await res.json();
+        const lista = document.getElementById("lista-jogos");
+        lista.innerHTML = "";
 
-      jogos.forEach(jogo => {
-        const div = document.createElement("div");
-        div.className = "jogo";
-        div.innerHTML = `
-          <div class="info-times">
-            <img src="${jogo.logoCasa}" alt="Casa" />
-            <strong>${jogo.timeCasa}</strong> vs 
-            <strong>${jogo.timeFora}</strong>
-            <img src="${jogo.logoFora}" alt="Fora" />
-          </div>
-          <div>
-            <span>${jogo.horario}</span><br>
-            <small>${jogo.liga}</small><br>
-            <button class="botao" onclick="verAnalise(${jogo.id})">Ver análise</button>
-          </div>
-        `;
-        lista.appendChild(div);
-      });
+        if (!jogos || jogos.length === 0) {
+          lista.innerHTML = "<p>Nenhum jogo encontrado para hoje.</p>";
+          return;
+        }
+
+        jogos.forEach(jogo => {
+          const div = document.createElement("div");
+          div.className = "jogo";
+          div.innerHTML = `
+            <div class="info-times">
+              <img src="${jogo.logoCasa}" alt="Casa" />
+              <strong>${jogo.timeCasa}</strong> vs 
+              <strong>${jogo.timeFora}</strong>
+              <img src="${jogo.logoFora}" alt="Fora" />
+            </div>
+            <div>
+              <span>${jogo.horario}</span><br>
+              <small>${jogo.liga}</small><br>
+              <button class="botao" onclick="verAnalise(${jogo.id})">Ver análise</button>
+            </div>
+          `;
+          lista.appendChild(div);
+        });
+      } catch (err) {
+        console.error("Erro ao carregar jogos:", err);
+        document.getElementById("lista-jogos").innerHTML = "<p>Erro ao buscar jogos.</p>";
+      }
     }
 
     async function verAnalise(fixtureId) {
-      const res = await fetch(`/analisar/${fixtureId}`);
-      const data = await res.json();
+      try {
+        const res = await fetch(`/analisar/${fixtureId}`);
+        const data = await res.json();
 
-      const a = data.estatisticas;
-      const analiseDiv = document.getElementById("analise");
-      analiseDiv.innerHTML = `
-        <h2>Análise: ${data.timeCasa} vs ${data.timeFora}</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Time</th>
-              <th>Gols Feitos</th>
-              <th>Gols Sofridos</th>
-              <th>Escanteios</th>
-              <th>Cartões</th>
-              <th>Chutes no Gol</th>
-              <th>Chutes Totais</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>${data.timeCasa}</td>
-              <td>${a.casa.mediaGolsFeitos}</td>
-              <td>${a.casa.me
+        const a = data.estatisticas;
+        const analiseDiv = document.getElementById("analise");
+        analiseDiv.innerHTML = `
+          <h2>Análise: ${data.timeCasa} vs ${data.timeFora}</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Gols Feitos</th>
+                <th>Gols Sofridos</th>
+                <th>Escanteios</th>
+                <th>Cartões</th>
+                <th>Chutes no Gol</th>
+                <th>Chutes Totais</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>${data.timeCasa}</td>
+                <td>${a.casa.mediaGolsFeitos}</td>
+                <td>${a.casa.mediaGolsSofridos}</td>
+                <td>${a.casa.mediaEscanteios}</td>
+                <td>${a.casa.mediaCartoes}</td>
+                <td>${a.casa.mediaChutesGol}</td>
+                <td>${a.casa.mediaChutesTotais}</td>
+              </tr>
+              <tr>
+                <td>${data.timeFora}</td>
+                <td>${a.fora.mediaGolsFeitos}</td>
+                <td>${a.fora.mediaGolsSofridos}</td>
+                <td>${a.fora.mediaEscanteios}</td>
+                <td>${a.fora.mediaCartoes}</td>
+                <td>${a.fora.mediaChutesGol}</td>
+                <td>${a.fora.mediaChutesTotais}</td>
+              </tr>
+            </tbody>
+          </table>
+        `;
+      } catch (err) {
+        console.error("Erro ao carregar análise:", err);
+        document.getElementById("analise").innerHTML = "<p>Erro ao buscar análise.</p>";
+      }
+    }
+
+    carregarJogos();
+  </script>
+</body>
+</html>
