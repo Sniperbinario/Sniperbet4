@@ -1,16 +1,20 @@
 {
   "name": "sniperbet4",
   "version": "1.0.0",
-  "main": "server.js",
   "type": "commonjs",
+  "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "build": "echo 'No build needed'"
+  },
+  "engines": {
+    "node": "18.x"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "node-fetch": "^2.6.7",
-    "puppeteer": "^21.3.8"
+    "puppeteer": "19.11.1"
   }
 }
