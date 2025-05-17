@@ -1,4 +1,3 @@
-// ======== server.js COMPLETO (Render + Robô Google + Correções) ========
 process.env.PUPPETEER_CACHE_DIR = './.cache/puppeteer';
 
 const express = require("express");
