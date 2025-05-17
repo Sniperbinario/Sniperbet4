@@ -1,11 +1,45 @@
 body {
-  background-color: #111;
-  color: #fff;
+  background-color: #121212;
+  color: #eee;
   font-family: Arial, sans-serif;
   padding: 20px;
-  text-align: center;
 }
-
 h1 {
-  color: #21f321;
+  text-align: center;
+  margin-bottom: 30px;
+}
+.jogo {
+  background: #1e1e1e;
+  padding: 20px;
+  margin: 15px 0;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.4);
+}
+.ultimos-jogos li {
+  padding: 4px 0;
+  border-bottom: 1px solid #333;
+  font-weight: bold;
+  color: #ccc;
+}
+button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin: 5px 5px 0 0;
+}
+.ver-estatisticas {
+  background-color: #008CBA;
+  color: white;
+}
+.ver-ao-vivo {
+  background-color: #00bb33;
+  color: white;
+}
+.ao-vivo {
+  display: none;
+  margin-top: 10px;
+  background: #111;
+  padding: 10px;
+  border-radius: 8px;
 }
