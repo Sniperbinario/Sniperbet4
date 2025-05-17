@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SniperBet</title>
+  <style>
+    body {
+      background-color: #111;
+      color: #eee;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #00ffcc;
+    }
+    .jogo {
+      background: #222;
+      border-radius: 10px;
+      padding: 15px;
+      margin: 10px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .info-times {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .info-times img {
+      height: 30px;
+    }
+    .botao {
+      background: #00ffcc;
+      border: none;
+      padding: 8px 12px;
+      color: #000;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>SniperBet - Jogos de Hoje</h1>
+  <div id="lista-jogos">Carregando...</div>
+
+  <script>
+    async function carregarJogos() {
+      const res = await fetch("/games");
+      const jogos = await res.json();
+      const lista = document.getElementById("lista-jogos");
+      lista.innerHTML = "";
+
+      jogos.forEach(jogo => {
+        const div = document.createElement("div");
+        div.className = "jogo";
+        div.innerHTML = `
+          <div class="info-times">
+            <img src="${jogo.logoCasa}" alt="Casa" />
+            <strong>${jogo.timeCasa}</strong> vs 
+            <strong>${jogo.timeFora}</strong>
+            <img src="${jogo.logoFora}" alt="Fora" />
+          </div>
+          <div>
+            <span>${jogo.horario}</span><br>
+            <small>${jogo.liga}</small><br>
+            <button class="botao" onclick="alert('Análise ainda não implementada')">Ver análise</button>
+          </div>
+        `;
+        lista.appendChild(div);
+      });
+    }
+
+    carregarJogos();
+  </script>
+</body>
+</html>
