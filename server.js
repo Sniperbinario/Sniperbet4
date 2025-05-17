@@ -4,7 +4,7 @@ const express = require("express");
 const cors = require("cors");
 const fetch = require("node-fetch");
 const path = require("path");
-const puppeteer = require("puppeteer");
+const puppeteer = require("puppeteer"); 
 require("dotenv").config();
 
 const app = express();
@@ -26,6 +26,7 @@ async function buscarJogosViaGoogle(ligaNome) {
     headless: "new",
     args: ["--no-sandbox", "--disable-setuid-sandbox"]
   });
+
   const page = await browser.newPage();
   await page.goto(`https://www.google.com/search?q=${encodeURIComponent(ligaNome + ' jogos hoje')}`);
 
@@ -199,7 +200,10 @@ app.get("/analise-ao-vivo", async (req, res) => {
   if (!jogo) return res.status(400).json({ erro: "Parâmetro 'jogo' é obrigatório" });
 
   try {
-    const browser = await puppeteer.launch({ headless: "new", args: ["--no-sandbox", "--disable-setuid-sandbox"] });
+    const browser = await puppeteer.launch({
+      headless: "new",
+      args: ["--no-sandbox", "--disable-setuid-sandbox"]
+    });
     const page = await browser.newPage();
     await page.goto(`https://www.google.com/search?q=${encodeURIComponent(jogo)}+ao+vivo`, {
       waitUntil: "domcontentloaded",
