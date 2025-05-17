@@ -1,12 +1,9 @@
-const chromium = require("chrome-aws-lambda");
-const puppeteer = require("puppeteer-core");
+const puppeteer = require("puppeteer");
 
 async function buscarDadosGoogle(jogo) {
   const browser = await puppeteer.launch({
-    args: chromium.args,
-    defaultViewport: chromium.defaultViewport,
-    executablePath: await chromium.executablePath,
-    headless: chromium.headless
+    headless: "new",
+    args: ["--no-sandbox", "--disable-setuid-sandbox"]
   });
 
   const page = await browser.newPage();
@@ -32,11 +29,11 @@ async function buscarDadosGoogle(jogo) {
     return {
       fonte: "Google",
       textoCompleto: texto,
-      escanteios: (texto.match(/Escanteios\s+(\d+)/i) || [])[1] || 'N/D',
-      chutes: (texto.match(/Chutes\s+(\d+)/i) || [])[1] || 'N/D',
-      cartoes: (texto.match(/Cartões amarelos\s+(\d+)/i) || [])[1] || 'N/D',
-      gols: (texto.match(/(\d+)\s+x\s+(\d+)/i) || []).slice(1, 3).join('x') || 'N/D',
-      tempo: (texto.match(/\d+º tempo - \d+ min/) || [])[0] || 'Em andamento',
+      escanteios: (texto.match(/Escanteios\\s+(\\d+)/i) || [])[1] || 'N/D',
+      chutes: (texto.match(/Chutes\\s+(\\d+)/i) || [])[1] || 'N/D',
+      cartoes: (texto.match(/Cartões amarelos\\s+(\\d+)/i) || [])[1] || 'N/D',
+      gols: (texto.match(/(\\d+)\\s+x\\s+(\\d+)/i) || []).slice(1, 3).join('x') || 'N/D',
+      tempo: (texto.match(/\\d+º tempo - \\d+ min/) || [])[0] || 'Em andamento',
     };
   });
 
