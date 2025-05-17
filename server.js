@@ -1,10 +1,8 @@
-process.env.PUPPETEER_CACHE_DIR = './.cache/puppeteer';
-
 const express = require("express");
 const cors = require("cors");
 const fetch = require("node-fetch");
 const path = require("path");
-const puppeteer = require("puppeteer"); 
+const puppeteer = require("puppeteer");
 require("dotenv").config();
 
 const app = express();
@@ -18,9 +16,10 @@ const headers = {
   "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com",
 };
 
-const ligas = [13, 71, 72, 39, 140, 135];
+const ligas = [13, 71, 72, 39, 140, 135]; // Libertadores, Série A, B, Premier, La Liga, Serie A ITA
 const temporada = new Date().getFullYear();
 
+// Robô Google para backup de jogos
 async function buscarJogosViaGoogle(ligaNome) {
   const browser = await puppeteer.launch({
     headless: "new",
@@ -98,7 +97,9 @@ const buscarEstatisticas = async (teamId) => {
       mediaChutesTotais += getStat("Total Shots");
       mediaChutesGol += getStat("Shots on Goal");
 
-      ultimosJogos.push({ texto: `${new Date(jogo.fixture.date).toLocaleDateString("pt-BR")} — ${jogo.teams.home.name} ${jogo.goals.home}x${jogo.goals.away} ${jogo.teams.away.name} ${isCasa ? "(casa)" : "(fora)"}` });
+      ultimosJogos.push({
+        texto: `${new Date(jogo.fixture.date).toLocaleDateString("pt-BR")} — ${jogo.teams.home.name} ${jogo.goals.home}x${jogo.goals.away} ${jogo.teams.away.name} ${isCasa ? "(casa)" : "(fora)"}`
+      });
     }
 
     const total = jogosFinalizados.length || 1;
