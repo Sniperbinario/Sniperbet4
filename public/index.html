@@ -11,7 +11,7 @@
       font-family: Arial, sans-serif;
       padding: 20px;
     }
-    h1 {
+    h1, h2 {
       text-align: center;
       color: #00ffcc;
     }
@@ -23,6 +23,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      flex-wrap: wrap;
     }
     .info-times {
       display: flex;
@@ -40,11 +41,28 @@
       border-radius: 5px;
       cursor: pointer;
     }
+    table {
+      margin-top: 20px;
+      background-color: #222;
+      color: #fff;
+      border-collapse: collapse;
+      width: 100%;
+    }
+    th, td {
+      border: 1px solid #444;
+      padding: 10px;
+    }
+    th {
+      background-color: #333;
+    }
   </style>
 </head>
 <body>
   <h1>SniperBet - Jogos de Hoje</h1>
   <div id="lista-jogos">Carregando...</div>
+
+  <hr />
+  <div id="analise"></div>
 
   <script>
     async function carregarJogos() {
@@ -66,14 +84,35 @@
           <div>
             <span>${jogo.horario}</span><br>
             <small>${jogo.liga}</small><br>
-            <button class="botao" onclick="alert('Análise ainda não implementada')">Ver análise</button>
+            <button class="botao" onclick="verAnalise(${jogo.id})">Ver análise</button>
           </div>
         `;
         lista.appendChild(div);
       });
     }
 
-    carregarJogos();
-  </script>
-</body>
-</html>
+    async function verAnalise(fixtureId) {
+      const res = await fetch(`/analisar/${fixtureId}`);
+      const data = await res.json();
+
+      const a = data.estatisticas;
+      const analiseDiv = document.getElementById("analise");
+      analiseDiv.innerHTML = `
+        <h2>Análise: ${data.timeCasa} vs ${data.timeFora}</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Gols Feitos</th>
+              <th>Gols Sofridos</th>
+              <th>Escanteios</th>
+              <th>Cartões</th>
+              <th>Chutes no Gol</th>
+              <th>Chutes Totais</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>${data.timeCasa}</td>
+              <td>${a.casa.mediaGolsFeitos}</td>
+              <td>${a.casa.me
