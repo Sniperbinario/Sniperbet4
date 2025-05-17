@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: sniperbet4
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    runtime: node
+    plan: free
+    region: oregon
