@@ -1,109 +1,120 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SniperBet - Jogos do Dia</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SniperBet — Jogos do Dia</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
     body {
       margin: 0;
-      font-family: 'Segoe UI', sans-serif;
       background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
-      color: #fff;
-      padding: 20px;
+      color: #f0f0f0;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 1rem;
     }
+
     h1 {
       text-align: center;
-      color: #00ff88;
-      margin-bottom: 30px;
+      font-size: 2rem;
+      margin-bottom: 2rem;
     }
+
     .game {
-      background-color: #1a1a1a;
-      border-radius: 15px;
+      background-color: #1c1c1c;
+      border-radius: 12px;
       padding: 20px;
       margin-bottom: 30px;
-      box-shadow: 0 0 12px rgba(0, 255, 136, 0.2);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
     }
+
     .teams {
-      font-size: 20px;
+      font-size: 1.2rem;
       font-weight: bold;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      margin-bottom: 0.3rem;
     }
+
     .logo {
-      height: 24px;
-      margin: 0 10px;
+      height: 22px;
       vertical-align: middle;
+      margin-right: 5px;
     }
+
     .time {
-      text-align: center;
+      font-size: 0.9rem;
       color: #ccc;
-      margin-bottom: 10px;
+      margin-bottom: 1rem;
     }
+
     .stats-container {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 1rem;
     }
-    .stats {
-      background: #2a2a2a;
-      padding: 15px;
-      border-radius: 10px;
-      font-size: 14px;
-    }
-    .recent-matches {
-      font-style: italic;
-      margin-top: 15px;
-    }
-    .rec {
-      font-weight: bold;
-      color: #00ff88;
-      margin-top: 15px;
-    }
-    .rec-backup {
-      color: #ffc107;
-    }
-    .advanced-btn {
-      background-color: #00ff88;
-      color: #000;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 10px;
-      font-weight: bold;
-      cursor: pointer;
-      margin-top: 15px;
-      transition: background 0.3s ease;
-    }
-    .advanced-btn:hover {
-      background-color: #00cc6f;
-    }
-    .advanced {
-      margin-top: 20px;
-      background: #111;
-      border: 1px solid #444;
-      border-radius: 10px;
-      padding: 15px;
-    }
-    .title {
-      font-weight: bold;
-      margin-top: 15px;
-    }
+
     @media (min-width: 768px) {
       .stats-container {
         flex-direction: row;
         justify-content: space-between;
       }
     }
+
+    .stats, .recent-matches, .advanced {
+      font-size: 0.95rem;
+    }
+
+    .recent-matches {
+      margin-top: 1rem;
+      font-style: italic;
+    }
+
+    .rec {
+      font-weight: bold;
+      margin-top: 1rem;
+      color: #00ff88;
+    }
+
+    .rec-backup {
+      color: #ffcc00;
+    }
+
+    button.toggle {
+      background-color: #00ff88;
+      border: none;
+      color: #000;
+      padding: 8px 14px;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 1rem;
+      transition: background 0.3s ease;
+    }
+
+    button.toggle:hover {
+      background-color: #00d177;
+    }
+
+    .advanced {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid #444;
+    }
+
+    hr {
+      border: 0;
+      border-top: 1px solid #444;
+      margin: 10px 0;
+    }
+
+    .title-section {
+      font-weight: bold;
+      margin-top: 0.5rem;
+      margin-bottom: 0.3rem;
+    }
   </style>
 </head>
 <body>
   <h1>⚽ SniperBet — Jogos do Dia</h1>
-  <div id="games">Carregando jogos...</div>
+  <div id="games">Carregando...</div>
 
   <script>
     async function loadGames() {
@@ -117,6 +128,7 @@
         div.className = 'game';
 
         const isBackup = game.recommendation.includes('backup');
+
         const homeStats = game.stats.home;
         const awayStats = game.stats.away;
 
@@ -128,18 +140,22 @@
           `• ${match.date} — ${match.homeTeam} ${match.homeGoals} x ${match.awayGoals} ${match.awayTeam} (${match.venue})`
         ).join('<br>') || '';
 
-        const standings = game.standings;
+        const prediction = game.prediction || {};
+        const standings = game.standings || [];
+        const odds = game.odds || {};
+
         const homeStanding = standings.find(t => t.team.name === game.homeTeam);
         const awayStanding = standings.find(t => t.team.name === game.awayTeam);
 
-        const odds = game.odds || {};
-        const prediction = game.prediction || {};
-
+        const id = 'adv-' + game.fixtureId;
         div.innerHTML = `
           <div class="teams">
-            <img src="${game.homeLogo}" class="logo">${game.homeTeam} vs ${game.awayLogo ? `<img src="${game.awayLogo}" class="logo">` : ''}${game.awayTeam}
+            <img src="${game.homeLogo}" class="logo"> ${game.homeTeam}
+            vs
+            <img src="${game.awayLogo}" class="logo"> ${game.awayTeam}
           </div>
           <div class="time">🕒 Horário: ${game.time}</div>
+          <hr>
           <div class="stats-container">
             <div class="stats">
               <strong>${game.homeTeam} - Médias (últimos 5 jogos):</strong><br>
@@ -164,17 +180,17 @@
             <strong>Últimos 5 jogos de ${game.homeTeam}:</strong><br>${homeMatches}<br><br>
             <strong>Últimos 5 jogos de ${game.awayTeam}:</strong><br>${awayMatches}
           </div>
-          <button class="advanced-btn" onclick="toggleAdvanced(this)">+ Ver análise avançada</button>
-          <div class="advanced" style="display:none">
-            <div class="title">📊 Previsão:</div>
-            • Palpite: ${prediction.advice}<br>
-            • ${game.homeTeam}: ${prediction.win_percent.home}%<br>
-            • Empate: ${prediction.win_percent.draw}%<br>
-            • ${game.awayTeam}: ${prediction.win_percent.away}%<br>
-            <div class="title">🏆 Classificação:</div>
-            ${homeStanding ? `${game.homeTeam} – ${homeStanding.rank}º lugar | ${homeStanding.points} pts | ${homeStanding.all.played} jogos (${homeStanding.all.win}V ${homeStanding.all.draw}E ${homeStanding.all.lose}D)<br>` : ''}
-            ${awayStanding ? `${game.awayTeam} – ${awayStanding.rank}º lugar | ${awayStanding.points} pts | ${awayStanding.all.played} jogos (${awayStanding.all.win}V ${awayStanding.all.draw}E ${awayStanding.all.lose}D)` : ''}
-            <div class="title">💰 Odds:</div>
+          <button class="toggle" onclick="toggle('${id}')">+ Ver análise avançada</button>
+          <div class="advanced" id="${id}" style="display:none">
+            <div class="title-section">📊 Previsão:</div>
+            • Palpite: ${prediction.advice || '-'}<br>
+            • ${game.homeTeam}: ${prediction.win_percent?.home || '-'}%<br>
+            • Empate: ${prediction.win_percent?.draw || '-'}%<br>
+            • ${game.awayTeam}: ${prediction.win_percent?.away || '-'}%
+            <div class="title-section">🏆 Classificação:</div>
+            ${homeStanding ? `${game.homeTeam} - ${homeStanding.rank}º lugar | ${homeStanding.points} pts | ${homeStanding.all.played} jogos (${homeStanding.all.win}V ${homeStanding.all.draw}E ${homeStanding.all.lose}D)<br>` : ''}
+            ${awayStanding ? `${game.awayTeam} - ${awayStanding.rank}º lugar | ${awayStanding.points} pts | ${awayStanding.all.played} jogos (${awayStanding.all.win}V ${awayStanding.all.draw}E ${awayStanding.all.lose}D)<br>` : ''}
+            <div class="title-section">💵 Odds:</div>
             • ${game.homeTeam}: ${odds.home || '-'}<br>
             • Empate: ${odds.draw || '-'}<br>
             • ${game.awayTeam}: ${odds.away || '-'}<br>
@@ -188,11 +204,16 @@
       });
     }
 
-    function toggleAdvanced(btn) {
-      const advanced = btn.nextElementSibling;
-      const showing = advanced.style.display === 'block';
-      advanced.style.display = showing ? 'none' : 'block';
-      btn.textContent = showing ? '+ Ver análise avançada' : '− Esconder análise avançada';
+    function toggle(id) {
+      const el = document.getElementById(id);
+      const btn = el.previousElementSibling;
+      if (el.style.display === 'none') {
+        el.style.display = 'block';
+        btn.textContent = '– Esconder análise avançada';
+      } else {
+        el.style.display = 'none';
+        btn.textContent = '+ Ver análise avançada';
+      }
     }
 
     loadGames();
